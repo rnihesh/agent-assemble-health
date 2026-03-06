@@ -1,0 +1,292 @@
+{
+  "interactions": [
+    {
+      "drug1": "warfarin",
+      "drug2": "aspirin",
+      "severity": "major",
+      "mechanism": "Additive anticoagulant and antiplatelet effects; aspirin also displaces warfarin from albumin binding sites and inhibits platelet function.",
+      "clinicalEffect": "Significantly increased risk of major and GI bleeding.",
+      "management": "Avoid combination unless clearly indicated (e.g., mechanical heart valve with recent ACS). If used together, monitor INR closely and use lowest effective aspirin dose (81 mg). Consider PPI for GI protection.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "warfarin",
+      "drug2": "amiodarone",
+      "severity": "major",
+      "mechanism": "Amiodarone inhibits CYP2C9 and CYP3A4, reducing warfarin metabolism and increasing its anticoagulant effect.",
+      "clinicalEffect": "INR may increase by 50-100% within 1-2 weeks; risk of serious bleeding.",
+      "management": "Reduce warfarin dose by 30-50% when initiating amiodarone. Monitor INR weekly for at least 6-8 weeks. Effect persists for weeks after amiodarone discontinuation due to long half-life.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "warfarin",
+      "drug2": "fluconazole",
+      "severity": "major",
+      "mechanism": "Fluconazole inhibits CYP2C9, the primary enzyme responsible for S-warfarin metabolism.",
+      "clinicalEffect": "Markedly increased INR and risk of bleeding, even with low-dose fluconazole (150 mg).",
+      "management": "Monitor INR within 3-5 days of starting fluconazole. Reduce warfarin dose by 25-50%. Consider alternative antifungal if possible.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "warfarin",
+      "drug2": "metronidazole",
+      "severity": "major",
+      "mechanism": "Metronidazole inhibits CYP2C9, decreasing warfarin clearance.",
+      "clinicalEffect": "Increased INR and bleeding risk within 3-7 days of coadministration.",
+      "management": "Monitor INR closely. Consider warfarin dose reduction of 25-35%. Short courses (<7 days) may require less adjustment but still need monitoring.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "ACE inhibitor",
+      "drug2": "potassium supplement",
+      "severity": "major",
+      "mechanism": "ACE inhibitors reduce aldosterone secretion, decreasing renal potassium excretion. Exogenous potassium further increases serum levels.",
+      "clinicalEffect": "Hyperkalemia, potentially life-threatening (cardiac arrhythmias, cardiac arrest).",
+      "management": "Monitor serum potassium within 1 week of starting combination, then periodically. Avoid concurrent use unless hypokalemia is documented. Also applies to potassium-sparing diuretics.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "ACE inhibitor",
+      "drug2": "spironolactone",
+      "severity": "major",
+      "mechanism": "Both reduce renal potassium excretion through complementary mechanisms (RAAS blockade + mineralocorticoid antagonism).",
+      "clinicalEffect": "Hyperkalemia, especially in patients with CKD, diabetes, or age > 65.",
+      "management": "If used together (e.g., heart failure), start spironolactone at low dose (12.5-25 mg), check potassium and creatinine within 1 week, then monthly for 3 months, then quarterly. Avoid if baseline K > 5.0 or eGFR < 30.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "metformin",
+      "drug2": "iodinated contrast dye",
+      "severity": "major",
+      "mechanism": "Contrast-induced nephropathy can impair renal clearance of metformin, leading to metformin accumulation.",
+      "clinicalEffect": "Lactic acidosis (rare but potentially fatal).",
+      "management": "Hold metformin at the time of or before the contrast procedure. Reassess renal function 48 hours post-procedure and restart metformin if eGFR is stable. ACR guidelines: hold only if eGFR < 30; for eGFR 30-60, hold and reassess.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "metformin",
+      "drug2": "alcohol",
+      "severity": "significant",
+      "mechanism": "Both metformin and alcohol independently increase lactate production and impair hepatic lactate clearance.",
+      "clinicalEffect": "Increased risk of lactic acidosis, especially with binge drinking or chronic heavy alcohol use.",
+      "management": "Advise moderation (no more than 1 drink/day for women, 2 for men). Avoid metformin in patients with alcohol use disorder or heavy drinking. Monitor lactate if symptomatic.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "simvastatin",
+      "drug2": "amlodipine",
+      "severity": "significant",
+      "mechanism": "Amlodipine inhibits CYP3A4, increasing simvastatin exposure. Simvastatin AUC increased approximately 1.6-fold.",
+      "clinicalEffect": "Increased risk of myopathy and rhabdomyolysis.",
+      "management": "Limit simvastatin dose to 20 mg/day when used with amlodipine (FDA labeling). Consider switching to a statin not metabolized by CYP3A4 (rosuvastatin, pravastatin, pitavastatin).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "statin",
+      "drug2": "gemfibrozil",
+      "severity": "major",
+      "mechanism": "Gemfibrozil inhibits CYP2C8 and OATP1B1 hepatic uptake transporters, markedly increasing statin concentrations.",
+      "clinicalEffect": "5-10x increased risk of rhabdomyolysis compared to statin alone.",
+      "management": "Avoid combination with simvastatin and lovastatin (contraindicated). If a fibrate is needed, use fenofibrate instead (does not share this interaction). If gemfibrozil is necessary, consider pravastatin or rosuvastatin at lowest doses.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "SSRI",
+      "drug2": "tramadol",
+      "severity": "major",
+      "mechanism": "Both increase serotonergic activity. SSRIs inhibit serotonin reuptake; tramadol also inhibits serotonin reuptake and has weak serotonin-releasing activity.",
+      "clinicalEffect": "Serotonin syndrome (altered mental status, autonomic instability, neuromuscular hyperactivity, hyperthermia). Also lowers seizure threshold.",
+      "management": "Avoid combination if possible. If used together, use lowest effective doses, counsel patient on serotonin syndrome symptoms, and monitor closely. Consider alternative analgesic.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "SSRI",
+      "drug2": "MAOI",
+      "severity": "critical",
+      "mechanism": "MAOIs prevent serotonin breakdown while SSRIs block serotonin reuptake, causing massive serotonin accumulation in synapses.",
+      "clinicalEffect": "Severe serotonin syndrome with hyperthermia, rigidity, myoclonus, autonomic instability, seizures, and potential death.",
+      "management": "Absolutely contraindicated. Requires a washout period of at least 14 days between discontinuing one and starting the other (5 weeks for fluoxetine due to long half-life active metabolite).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "SSRI",
+      "drug2": "NSAID",
+      "severity": "significant",
+      "mechanism": "SSRIs impair platelet serotonin uptake (needed for platelet aggregation). NSAIDs inhibit COX-1, reducing thromboxane A2. Additive bleeding risk.",
+      "clinicalEffect": "Approximately 2-fold increased risk of upper GI bleeding compared to either drug alone.",
+      "management": "Use lowest effective NSAID dose for shortest duration. Consider PPI prophylaxis, especially in patients with additional GI risk factors (age > 65, history of GI bleed, concurrent anticoagulant).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "clopidogrel",
+      "drug2": "omeprazole",
+      "severity": "significant",
+      "mechanism": "Omeprazole is a potent CYP2C19 inhibitor. Clopidogrel is a prodrug requiring CYP2C19 activation. Omeprazole reduces formation of the active metabolite by ~45%.",
+      "clinicalEffect": "Reduced antiplatelet effect of clopidogrel; potential increased risk of cardiovascular events (stent thrombosis, MI).",
+      "management": "Avoid omeprazole and esomeprazole with clopidogrel. Use pantoprazole (minimal CYP2C19 inhibition), lansoprazole, or H2 blocker instead. Separate dosing times does NOT resolve the interaction.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "digoxin",
+      "drug2": "amiodarone",
+      "severity": "major",
+      "mechanism": "Amiodarone inhibits P-glycoprotein-mediated renal and intestinal clearance of digoxin, increasing digoxin serum levels by 70-100%.",
+      "clinicalEffect": "Digoxin toxicity (nausea, vomiting, visual disturbances, bradycardia, arrhythmias).",
+      "management": "Reduce digoxin dose by 50% when initiating amiodarone. Monitor digoxin levels within 1-2 weeks. Target trough digoxin 0.5-0.9 ng/mL.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "digoxin",
+      "drug2": "verapamil",
+      "severity": "major",
+      "mechanism": "Verapamil inhibits P-glycoprotein, reducing renal and biliary clearance of digoxin. Also additive AV nodal depression.",
+      "clinicalEffect": "Increased digoxin levels (50-75%); additive bradycardia and AV block.",
+      "management": "Reduce digoxin dose by 33-50%. Monitor digoxin levels and heart rate/rhythm. ECG monitoring when initiating combination.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "lithium",
+      "drug2": "NSAID",
+      "severity": "major",
+      "mechanism": "NSAIDs reduce renal prostaglandin synthesis, decreasing renal blood flow and lithium clearance. Lithium levels may increase 15-50%.",
+      "clinicalEffect": "Lithium toxicity (tremor, ataxia, nausea, renal impairment, seizures, cardiac arrhythmias).",
+      "management": "Avoid combination if possible. If NSAID is necessary, monitor lithium levels within 5-7 days of starting, use the lowest NSAID dose for shortest duration, and educate patient on toxicity symptoms. Sulindac may have less effect.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "lithium",
+      "drug2": "ACE inhibitor",
+      "severity": "major",
+      "mechanism": "ACE inhibitors reduce GFR (via efferent arteriolar dilation) and promote sodium loss, increasing proximal tubular lithium reabsorption.",
+      "clinicalEffect": "Lithium levels may increase 2-3 fold; risk of lithium toxicity.",
+      "management": "Monitor lithium levels within 1 week of starting ACE inhibitor and regularly thereafter. May need 50-75% lithium dose reduction. Same interaction with ARBs.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "methotrexate",
+      "drug2": "trimethoprim-sulfamethoxazole",
+      "severity": "critical",
+      "mechanism": "Both are folate antagonists. TMP-SMX displaces methotrexate from protein binding and reduces its renal tubular secretion, increasing methotrexate levels.",
+      "clinicalEffect": "Severe pancytopenia (sometimes fatal), megaloblastic anemia, mucositis.",
+      "management": "Avoid concurrent use, especially with high-dose methotrexate. Even with low-dose methotrexate (for RA), this combination has caused fatalities. Use alternative antibiotics. If unavoidable, hold methotrexate during TMP-SMX course and monitor CBC closely.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "methotrexate",
+      "drug2": "NSAID",
+      "severity": "significant",
+      "mechanism": "NSAIDs reduce renal blood flow and compete with methotrexate for renal tubular secretion, decreasing methotrexate clearance.",
+      "clinicalEffect": "Increased methotrexate levels and toxicity (myelosuppression, hepatotoxicity, nephrotoxicity).",
+      "management": "Low-dose methotrexate (for RA/psoriasis): use NSAIDs cautiously, monitor CBC and renal function. High-dose methotrexate (oncology): avoid NSAIDs for 2 days before through 2 days after methotrexate.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "fluoroquinolone",
+      "drug2": "QT-prolonging drug",
+      "severity": "major",
+      "mechanism": "Fluoroquinolones (especially moxifloxacin) block cardiac HERG potassium channels. Additive QT prolongation with other QT-prolonging agents.",
+      "clinicalEffect": "Prolonged QT interval, torsades de pointes, sudden cardiac death.",
+      "management": "Avoid combination of fluoroquinolone with other QT-prolonging drugs (antiarrhythmics, antipsychotics, certain antiemetics). If necessary, obtain baseline ECG, correct electrolytes (K, Mg), and monitor QTc. Levofloxacin has less QT effect than moxifloxacin.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "ciprofloxacin",
+      "drug2": "tizanidine",
+      "severity": "critical",
+      "mechanism": "Ciprofloxacin is a potent CYP1A2 inhibitor. Tizanidine is primarily metabolized by CYP1A2. Coadministration increases tizanidine AUC by 10-fold and Cmax by 7-fold.",
+      "clinicalEffect": "Severe hypotension, excessive sedation, bradycardia.",
+      "management": "Combination is contraindicated. Use an alternative antibiotic or alternative muscle relaxant.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "carbamazepine",
+      "drug2": "oral contraceptive",
+      "severity": "significant",
+      "mechanism": "Carbamazepine is a potent CYP3A4 inducer, increasing metabolism of ethinyl estradiol and progestins in oral contraceptives.",
+      "clinicalEffect": "Reduced contraceptive efficacy; unintended pregnancy.",
+      "management": "Use non-oral contraceptive methods (copper IUD, depot medroxyprogesterone) or oral contraceptives with >= 50 mcg ethinyl estradiol. Also applies to phenytoin, phenobarbital, oxcarbazepine, topiramate, and rifampin.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "rifampin",
+      "drug2": "oral contraceptive",
+      "severity": "major",
+      "mechanism": "Rifampin is one of the most potent known CYP3A4 inducers, dramatically increasing metabolism of estrogen and progestin components.",
+      "clinicalEffect": "Complete loss of contraceptive efficacy; breakthrough bleeding and unintended pregnancy.",
+      "management": "Use non-hormonal contraception (copper IUD, barrier methods) during rifampin therapy and for 28 days after discontinuation. This interaction affects all hormonal contraceptive routes (oral, patch, ring, implant).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "potassium-sparing diuretic",
+      "drug2": "potassium supplement",
+      "severity": "major",
+      "mechanism": "Potassium-sparing diuretics (spironolactone, eplerenone, triamterene, amiloride) decrease renal potassium excretion. Exogenous potassium further increases serum levels.",
+      "clinicalEffect": "Hyperkalemia (muscle weakness, paresthesias, cardiac conduction abnormalities, cardiac arrest).",
+      "management": "Generally avoid concurrent use. If both are necessary, monitor serum potassium frequently (within 3 days, then weekly for 4 weeks, then monthly). High-risk: CKD, diabetes, elderly.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "theophylline",
+      "drug2": "ciprofloxacin",
+      "severity": "major",
+      "mechanism": "Ciprofloxacin inhibits CYP1A2, the primary metabolic pathway for theophylline. Theophylline clearance reduced by 20-30%.",
+      "clinicalEffect": "Theophylline toxicity (nausea, vomiting, tremor, tachycardia, seizures).",
+      "management": "Reduce theophylline dose by 30-50% if ciprofloxacin must be used. Monitor theophylline levels. Consider levofloxacin or moxifloxacin as alternatives (less CYP1A2 inhibition).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "opioid",
+      "drug2": "benzodiazepine",
+      "severity": "critical",
+      "mechanism": "Both classes cause central nervous system and respiratory depression through different mechanisms (mu-opioid receptors and GABA-A receptors). Effects are synergistic.",
+      "clinicalEffect": "Profound sedation, respiratory depression, coma, and death. FDA boxed warning issued 2016.",
+      "management": "Avoid concurrent prescribing whenever possible. If combination is necessary, prescribe lowest effective doses for shortest duration. Counsel patients on risks. Consider naloxone co-prescribing. Monitor for sedation and respiratory depression.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "amlodipine",
+      "drug2": "cyclosporine",
+      "severity": "significant",
+      "mechanism": "Amlodipine inhibits CYP3A4 and P-glycoprotein, reducing cyclosporine metabolism and efflux. Cyclosporine levels increase by approximately 40%.",
+      "clinicalEffect": "Cyclosporine toxicity (nephrotoxicity, hypertension, tremor, gingival hyperplasia).",
+      "management": "Monitor cyclosporine trough levels closely when adding or adjusting amlodipine. May need to reduce cyclosporine dose. Consider alternative calcium channel blocker (isradipine has less interaction).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "allopurinol",
+      "drug2": "azathioprine",
+      "severity": "critical",
+      "mechanism": "Allopurinol inhibits xanthine oxidase, which is responsible for the first-pass metabolism of azathioprine (via its metabolite 6-mercaptopurine). This reduces clearance by 67-75%.",
+      "clinicalEffect": "Severe myelosuppression (pancytopenia), potentially fatal.",
+      "management": "If combination is necessary, reduce azathioprine dose by 67-75% (typically to 25-33% of standard dose). Monitor CBC weekly for first 2 months, then monthly. Consider febuxostat as alternative xanthine oxidase inhibitor (similar interaction but possibly less pronounced).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "sildenafil",
+      "drug2": "nitrate",
+      "severity": "critical",
+      "mechanism": "Both sildenafil (PDE5 inhibitor) and nitrates increase cyclic GMP, producing additive vasodilation and severe hypotension.",
+      "clinicalEffect": "Severe, potentially fatal hypotension and cardiovascular collapse.",
+      "management": "Absolutely contraindicated. Do not administer nitrates within 24 hours of sildenafil or vardenafil, or within 48 hours of tadalafil. Applies to all nitrate forms (sublingual, oral, IV, topical). In emergency chest pain, if PDE5 inhibitor was taken, use alternative antianginal therapies.",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "clarithromycin",
+      "drug2": "colchicine",
+      "severity": "critical",
+      "mechanism": "Clarithromycin inhibits CYP3A4 and P-glycoprotein, dramatically increasing colchicine bioavailability and reducing its clearance.",
+      "clinicalEffect": "Colchicine toxicity: multi-organ failure (myelosuppression, rhabdomyolysis, DIC, liver failure, renal failure). Multiple fatalities reported.",
+      "management": "Contraindicated in patients with renal or hepatic impairment. In patients with normal renal and hepatic function, reduce colchicine dose significantly (max 0.6 mg as a single dose, no repeat for 3 days). Consider alternative antibiotic (azithromycin has minimal CYP3A4 inhibition).",
+      "evidenceLevel": "well-established"
+    },
+    {
+      "drug1": "clonidine",
+      "drug2": "beta-blocker",
+      "severity": "significant",
+      "mechanism": "If clonidine is abruptly withdrawn while a beta-blocker is continued, unopposed alpha-adrenergic stimulation from sympathetic rebound can cause severe rebound hypertension.",
+      "clinicalEffect": "Hypertensive crisis upon clonidine withdrawal; may also see rebound tachycardia partially blunted by beta-blocker.",
+      "management": "If discontinuing, taper clonidine first before withdrawing the beta-blocker. If both must be stopped, taper clonidine first, then the beta-blocker. Educate patient to never abruptly discontinue clonidine.",
+      "evidenceLevel": "well-established"
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "calculators": [
+    {
+      "id": "cha2ds2-vasc",
+      "name": "CHA2DS2-VASc Score",
+      "fullName": "Congestive heart failure, Hypertension, Age >= 75 (doubled), Diabetes, Stroke/TIA/TE (doubled), Vascular disease, Age 65-74, Sex category",
+      "purpose": "Estimates annual stroke risk in patients with non-valvular atrial fibrillation",
+      "applicableConditions": ["atrial fibrillation", "atrial flutter"],
+      "maxScore": 9,
+      "components": [
+        { "name": "Congestive Heart Failure", "points": 1, "criteria": "History of CHF or LV ejection fraction <= 40%" },
+        { "name": "Hypertension", "points": 1, "criteria": "Resting BP > 140/90 or on antihypertensive therapy" },
+        { "name": "Age >= 75", "points": 2, "criteria": "Age 75 years or older" },
+        { "name": "Diabetes Mellitus", "points": 1, "criteria": "Fasting glucose >= 126 mg/dL or on hypoglycemic treatment" },
+        { "name": "Stroke/TIA/Thromboembolism", "points": 2, "criteria": "Prior stroke, TIA, or systemic embolism" },
+        { "name": "Vascular Disease", "points": 1, "criteria": "Prior MI, PAD, or aortic plaque" },
+        { "name": "Age 65-74", "points": 1, "criteria": "Age 65 to 74 years" },
+        { "name": "Sex Category (Female)", "points": 1, "criteria": "Female sex" }
+      ],
+      "interpretation": [
+        { "score": 0, "risk": "Low", "annualStrokeRisk": "0.2%", "recommendation": "No anticoagulation (may consider aspirin in some guidelines)" },
+        { "score": 1, "risk": "Low-Moderate", "annualStrokeRisk": "0.6%", "recommendation": "Consider oral anticoagulation or aspirin (males); anticoagulation recommended (females if score driven by sex alone)" },
+        { "score": 2, "risk": "Moderate", "annualStrokeRisk": "2.2%", "recommendation": "Oral anticoagulation recommended (DOAC preferred over warfarin per 2019 AHA/ACC/HRS)" },
+        { "scoreRange": "3-4", "risk": "Moderate-High", "annualStrokeRisk": "3.2-4.8%", "recommendation": "Oral anticoagulation recommended" },
+        { "scoreRange": "5-6", "risk": "High", "annualStrokeRisk": "6.7-9.8%", "recommendation": "Oral anticoagulation strongly recommended" },
+        { "scoreRange": "7-9", "risk": "Very High", "annualStrokeRisk": "11.2-15.2%", "recommendation": "Oral anticoagulation strongly recommended; consider LAA closure if contraindicated" }
+      ],
+      "guidelineSource": "2019 AHA/ACC/HRS Focused Update on Atrial Fibrillation; 2020 ESC Guidelines for AF"
+    },
+    {
+      "id": "heart",
+      "name": "HEART Score",
+      "fullName": "History, ECG, Age, Risk Factors, Troponin",
+      "purpose": "Predicts 6-week risk of major adverse cardiac events (MACE) in patients presenting with chest pain",
+      "applicableConditions": ["chest pain", "acute coronary syndrome", "unstable angina"],
+      "maxScore": 10,
+      "components": [
+        {
+          "name": "History",
+          "options": [
+            { "points": 0, "criteria": "Slightly suspicious (non-specific history)" },
+            { "points": 1, "criteria": "Moderately suspicious (contains some traditional ACS features)" },
+            { "points": 2, "criteria": "Highly suspicious (classic ACS presentation: substernal, exertional, radiation, diaphoresis)" }
+          ]
+        },
+        {
+          "name": "ECG",
+          "options": [
+            { "points": 0, "criteria": "Normal" },
+            { "points": 1, "criteria": "Non-specific repolarization disturbance (LBBB, LVH, digoxin, pacemaker)" },
+            { "points": 2, "criteria": "Significant ST deviation (ST depression or elevation not due to LBBB/LVH)" }
+          ]
+        },
+        {
+          "name": "Age",
+          "options": [
+            { "points": 0, "criteria": "< 45 years" },
+            { "points": 1, "criteria": "45 - 64 years" },
+            { "points": 2, "criteria": ">= 65 years" }
+          ]
+        },
+        {
+          "name": "Risk Factors",
+          "options": [
+            { "points": 0, "criteria": "No known risk factors" },
+            { "points": 1, "criteria": "1-2 risk factors (HTN, hypercholesterolemia, DM, obesity BMI>30, smoking, family hx)" },
+            { "points": 2, "criteria": ">=3 risk factors or history of atherosclerotic disease (prior MI, PCI/CABG, CVA/TIA, PAD)" }
+          ]
+        },
+        {
+          "name": "Troponin",
+          "options": [
+            { "points": 0, "criteria": "<= normal limit" },
+            { "points": 1, "criteria": "1-3x normal limit" },
+            { "points": 2, "criteria": "> 3x normal limit" }
+          ]
+        }
+      ],
+      "interpretation": [
+        { "scoreRange": "0-3", "risk": "Low", "maceRisk": "0.9-1.7%", "recommendation": "Consider early discharge, outpatient follow-up, no further cardiac workup in ED" },
+        { "scoreRange": "4-6", "risk": "Moderate", "maceRisk": "12-16.6%", "recommendation": "Admit for observation, serial troponins, consider non-invasive testing (stress test or CCTA)" },
+        { "scoreRange": "7-10", "risk": "High", "maceRisk": "50-65%", "recommendation": "Invasive strategy recommended, early cardiology consultation, consider coronary angiography" }
+      ],
+      "guidelineSource": "Backus BE et al. (2010, 2013); 2021 AHA/ACC Chest Pain Guideline"
+    },
+    {
+      "id": "wells-dvt",
+      "name": "Wells Score for DVT",
+      "fullName": "Wells Clinical Prediction Rule for Deep Vein Thrombosis",
+      "purpose": "Estimates pre-test probability of deep vein thrombosis",
+      "applicableConditions": ["suspected DVT", "leg swelling", "calf pain", "deep vein thrombosis workup"],
+      "components": [
+        { "name": "Active cancer (treatment within 6 months or palliative)", "points": 1 },
+        { "name": "Paralysis, paresis, or recent plaster immobilization of the lower extremity", "points": 1 },
+        { "name": "Recently bedridden > 3 days or major surgery within 12 weeks", "points": 1 },
+        { "name": "Localized tenderness along the distribution of the deep venous system", "points": 1 },
+        { "name": "Entire leg swollen", "points": 1 },
+        { "name": "Calf swelling >= 3 cm compared to asymptomatic leg (measured 10 cm below tibial tuberosity)", "points": 1 },
+        { "name": "Pitting edema confined to the symptomatic leg", "points": 1 },
+        { "name": "Collateral superficial veins (non-varicose)", "points": 1 },
+        { "name": "Previously documented DVT", "points": 1 },
+        { "name": "Alternative diagnosis at least as likely as DVT", "points": -2 }
+      ],
+      "interpretation": [
+        { "scoreRange": "<= 0", "risk": "Low", "dvtProbability": "5%", "recommendation": "D-dimer testing; if negative, DVT excluded. If positive, obtain compression ultrasound." },
+        { "scoreRange": "1-2", "risk": "Moderate", "dvtProbability": "17%", "recommendation": "D-dimer testing; if negative, DVT excluded. If positive, obtain compression ultrasound." },
+        { "scoreRange": ">= 3", "risk": "High", "dvtProbability": "53%", "recommendation": "Compression ultrasound recommended (skip D-dimer). If negative, consider repeat US in 5-7 days or venography." }
+      ],
+      "guidelineSource": "Wells PS et al. (2003); ACCP Guidelines on VTE (2016)"
+    },
+    {
+      "id": "wells-pe",
+      "name": "Wells Score for PE",
+      "fullName": "Wells Clinical Prediction Rule for Pulmonary Embolism",
+      "purpose": "Estimates pre-test probability of pulmonary embolism",
+      "applicableConditions": ["suspected PE", "dyspnea", "pleuritic chest pain", "pulmonary embolism workup"],
+      "components": [
+        { "name": "Clinical signs and symptoms of DVT (leg swelling, pain with palpation of deep veins)", "points": 3 },
+        { "name": "PE is #1 diagnosis or equally likely", "points": 3 },
+        { "name": "Heart rate > 100 bpm", "points": 1.5 },
+        { "name": "Immobilization (>= 3 days) or surgery in previous 4 weeks", "points": 1.5 },
+        { "name": "Previous PE or DVT", "points": 1.5 },
+        { "name": "Hemoptysis", "points": 1 },
+        { "name": "Malignancy (treatment within 6 months or palliative)", "points": 1 }
+      ],
+      "interpretation": [
+        { "scoreRange": "< 2", "risk": "Low", "peProbability": "1.3%", "recommendation": "D-dimer (PERC rule may apply if all 8 criteria met); if negative, PE excluded." },
+        { "scoreRange": "2-6", "risk": "Moderate", "peProbability": "16.2%", "recommendation": "D-dimer testing; if positive, CT pulmonary angiography (CTPA)." },
+        { "scoreRange": "> 6", "risk": "High", "peProbability": "37.5%", "recommendation": "CT pulmonary angiography recommended (skip D-dimer). If CTPA unavailable, consider V/Q scan." }
+      ],
+      "guidelineSource": "Wells PS et al. (2000, 2001); ACCP Guidelines on VTE (2016); ESC 2019 Guidelines on PE"
+    },
+    {
+      "id": "ascvd",
+      "name": "ASCVD 10-Year Risk Score",
+      "fullName": "Atherosclerotic Cardiovascular Disease Pooled Cohort Equations",
+      "purpose": "Estimates 10-year risk of a first atherosclerotic cardiovascular event (MI or stroke) in adults aged 40-79",
+      "applicableConditions": ["cardiovascular risk assessment", "primary prevention", "hyperlipidemia", "hypertension", "diabetes", "smoking"],
+      "requiredInputs": [
+        "age (40-79)",
+        "sex",
+        "race (White, African American, or Other)",
+        "total cholesterol (mg/dL)",
+        "HDL cholesterol (mg/dL)",
+        "systolic blood pressure (mmHg)",
+        "blood pressure treatment (yes/no)",
+        "diabetes (yes/no)",
+        "current smoker (yes/no)"
+      ],
+      "formula": "Pooled Cohort Equations (Goff et al., 2014). Sex- and race-specific Cox proportional hazards model using ln-transformed values of age, total cholesterol, HDL-C, treated/untreated SBP, diabetes, and smoking status.",
+      "interpretation": [
+        { "riskRange": "< 5%", "category": "Low", "recommendation": "Emphasize lifestyle measures. Statin therapy generally not recommended unless other risk enhancers present." },
+        { "riskRange": "5% to < 7.5%", "category": "Borderline", "recommendation": "Risk discussion. Consider statin if risk-enhancing factors present (family hx, LDL >= 160, metabolic syndrome, CKD, inflammatory conditions, South Asian ancestry, elevated Lp(a), hsCRP >= 2, ABI < 0.9, CAC > 0)." },
+        { "riskRange": "7.5% to < 20%", "category": "Intermediate", "recommendation": "Risk discussion. Moderate-intensity statin reasonable. Consider CAC score to refine if decision is uncertain (CAC = 0 favors deferral; CAC >= 100 or >= 75th percentile favors statin)." },
+        { "riskRange": ">= 20%", "category": "High", "recommendation": "High-intensity statin recommended. Maximize lifestyle interventions. Consider adding ezetimibe or PCSK9 inhibitor if LDL remains >= 70 mg/dL." }
+      ],
+      "guidelineSource": "2019 ACC/AHA Guideline on Primary Prevention of Cardiovascular Disease; 2018 AHA/ACC Cholesterol Guideline"
+    },
+    {
+      "id": "ckd-epi",
+      "name": "CKD-EPI eGFR",
+      "fullName": "Chronic Kidney Disease Epidemiology Collaboration Equation (2021)",
+      "purpose": "Estimates glomerular filtration rate from serum creatinine, age, and sex (race-free 2021 equation)",
+      "applicableConditions": ["chronic kidney disease", "elevated creatinine", "renal impairment", "kidney function assessment"],
+      "requiredInputs": [
+        "serum creatinine (mg/dL)",
+        "age (years)",
+        "sex (male/female)"
+      ],
+      "formula": "2021 CKD-EPI equation (race-free): eGFR = 142 * min(SCr/kappa, 1)^alpha * max(SCr/kappa, 1)^-1.200 * 0.9938^age * (1.012 if female). Where kappa = 0.7 (female) or 0.9 (male); alpha = -0.241 (female) or -0.302 (male).",
+      "interpretation": [
+        { "gfrRange": ">= 90", "stage": "G1", "description": "Normal or high", "recommendation": "Monitor annually if risk factors present. Address modifiable risk factors (diabetes, hypertension)." },
+        { "gfrRange": "60-89", "stage": "G2", "description": "Mildly decreased", "recommendation": "Monitor annually. Optimize blood pressure control. Assess for albuminuria." },
+        { "gfrRange": "45-59", "stage": "G3a", "description": "Mildly to moderately decreased", "recommendation": "Referral to nephrology if progressive. Monitor every 6 months. Dose-adjust renally cleared medications." },
+        { "gfrRange": "30-44", "stage": "G3b", "description": "Moderately to severely decreased", "recommendation": "Nephrology referral. Monitor every 3-6 months. Avoid nephrotoxins. Check PTH, vitamin D, phosphorus." },
+        { "gfrRange": "15-29", "stage": "G4", "description": "Severely decreased", "recommendation": "Nephrology co-management. Prepare for renal replacement therapy. Monitor monthly to every 3 months." },
+        { "gfrRange": "< 15", "stage": "G5", "description": "Kidney failure", "recommendation": "Dialysis or transplant planning. Urgent nephrology if not already established." }
+      ],
+      "guidelineSource": "Inker LA et al. NEJM 2021; KDIGO 2024 Clinical Practice Guideline for CKD"
+    }
+  ]
+}
