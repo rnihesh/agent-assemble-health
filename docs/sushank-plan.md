@@ -28,7 +28,7 @@ Clinical reference data validation, synthetic patient data, Prompt Opinion works
   - Validate monitoring schedules
 - [ ] Review CDC immunization schedule (12 entries)
 
-### Weeks 3-4 - Synthea Data & Test Scenarios
+### Weeks 3-4 - Synthea Data & Test Scenarios (PARTIALLY DONE)
 - [ ] Install Synthea (https://github.com/synthetichealth/synthea)
 - [ ] Generate 10-20 synthetic patients with diverse profiles:
   - Elderly patient with AFib + diabetes + CKD (tests: CHA2DS2-VASc, care gaps, multiple guidelines)
@@ -37,9 +37,14 @@ Clinical reference data validation, synthetic patient data, Prompt Opinion works
   - Patient on warfarin + NSAIDs (tests: drug interaction detection)
   - Patient with abnormal labs (tests: lab interpretation, critical values)
   - Diabetic patient not at goal (tests: guideline matching, HbA1c targets)
-- [ ] Create FHIR test fixture bundles in `mcp-server/tests/fixtures/fhir-bundles/`
+- [x] Create FHIR test fixture bundles in `mcp-server/tests/fixtures/fhir-bundles/`
+  - [x] complex-elderly-patient.json (James Wilson, 72M - AFib, DM2, CKD3, HTN, HF)
+  - [x] chest-pain-patient.json (Robert Chen, 55M - acute chest pain, HTN, DM2, smoker)
+  - [x] drug-safety-patient.json (Margaret Thompson, 65F - warfarin+ibuprofen, SSRI+tramadol)
+  - [x] preventive-care-patient.json (Sarah Martinez, 45F - overdue screenings)
+  - [x] diabetic-not-at-goal.json (David Kumar, 58M - HbA1c trending up 8.3->8.7->9.1)
 - [ ] Load synthetic patients into HAPI FHIR test server
-- [ ] Document patient IDs and expected outcomes for each scenario
+- [x] Document patient IDs and expected outcomes for each scenario (docs/test-scenarios.md)
 - [ ] Run `scripts/load-synthea-data.sh` to verify data loading
 
 ### Week 5 - Prompt Opinion Workspace
@@ -50,8 +55,8 @@ Clinical reference data validation, synthetic patient data, Prompt Opinion works
 - [ ] Verify agent connectivity from Prompt Opinion
 - [ ] Test each tool through the platform UI
 
-### Weeks 6-7 - Demo Script & Video
-- [ ] Write demo script covering:
+### Weeks 6-7 - Demo Script & Video (PARTIALLY DONE)
+- [x] Write demo script (docs/demo-script.md) covering:
   1. **Opening** (15 sec): "MedAssist is a clinical decision support agent..."
   2. **Patient Review** (45 sec): Show comprehensive review of a complex patient
   3. **Drug Interaction** (30 sec): Check safety of adding a new medication
@@ -74,11 +79,24 @@ Clinical reference data validation, synthetic patient data, Prompt Opinion works
   - [ ] All tools working end-to-end
   - [ ] Source code clean and documented
 
+## Next Sprint - Improvements
+- [ ] Add more drug interactions to the matrix (target: 50+ interactions)
+- [ ] Add pediatric reference ranges for lab interpretation
+- [ ] Create patient scenario generator script (automated fixture creation)
+- [ ] Add clinical decision tree visualizations to demo
+- [ ] Create comparison table: MedAssist vs existing CDS tools
+- [ ] Add international guideline support (NICE, ESC in addition to US guidelines)
+- [ ] Validate all SNOMED CT and LOINC codes against official terminology servers
+- [ ] Create a clinical accuracy scorecard for each tool
+- [ ] Add Spanish language support for patient-facing outputs
+
 ## Key Files to Review/Edit
 ```
 mcp-server/src/config/constants.ts          # All clinical reference data
 agent/medassist/knowledge/*.json            # Agent knowledge files
-mcp-server/tests/fixtures/fhir-bundles/     # Test data (to create)
+mcp-server/tests/fixtures/fhir-bundles/     # 5 test patient scenarios
+docs/demo-script.md                         # Demo flow document
+docs/test-scenarios.md                      # Expected outcomes per patient
 ```
 
 ## Clinical Data Sources for Validation
@@ -94,8 +112,8 @@ mcp-server/tests/fixtures/fhir-bundles/     # Test data (to create)
 ## Demo Scenarios Checklist
 | Scenario | Patient Profile | Tools Demonstrated | Status |
 |----------|----------------|-------------------|--------|
-| Complex elderly | 72M, AFib, DM2, CKD3, HTN | All 6 tools | [ ] |
-| Chest pain | 55M, presenting with chest pain | HEART score, troponin, patient summary | [ ] |
-| Drug safety | 65F on warfarin, adding NSAID | Drug interactions, allergies | [ ] |
-| Preventive care | 45F, healthy, overdue screenings | Care gaps, immunizations | [ ] |
-| Guideline review | 58M, DM2 not at HbA1c goal | Guideline matcher, lab interpreter | [ ] |
+| Complex elderly | James Wilson, 72M, AFib+DM2+CKD3+HTN+HF | All 6 tools | [x] Fixture created |
+| Chest pain | Robert Chen, 55M, acute chest pain | HEART score, troponin, patient summary | [x] Fixture created |
+| Drug safety | Margaret Thompson, 65F, warfarin+NSAID+SSRI+tramadol | Drug interactions, allergies | [x] Fixture created |
+| Preventive care | Sarah Martinez, 45F, overdue screenings | Care gaps, immunizations | [x] Fixture created |
+| Guideline review | David Kumar, 58M, DM2 not at HbA1c goal | Guideline matcher, lab interpreter | [x] Fixture created |

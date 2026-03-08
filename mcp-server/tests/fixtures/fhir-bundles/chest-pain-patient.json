@@ -1,0 +1,284 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:patient-002",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-002",
+        "name": [{ "given": ["Robert"], "family": "Chen" }],
+        "gender": "male",
+        "birthDate": "1970-06-22",
+        "address": [{ "line": ["789 Elm St"], "city": "San Francisco", "state": "CA", "postalCode": "94102" }],
+        "telecom": [{ "system": "phone", "value": "415-555-0202" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-chest-pain",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-chest-pain",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "29857009", "display": "Chest pain" }], "text": "Acute chest pain" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "onsetDateTime": "2025-12-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-htn-002",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-htn-002",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "38341003", "display": "Hypertension" }], "text": "Hypertension" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "onsetDateTime": "2015-03-10"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-hyperlipidemia",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-hyperlipidemia",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "55822004", "display": "Hyperlipidemia" }], "text": "Hyperlipidemia" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "onsetDateTime": "2016-07-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-dm2-002",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-dm2-002",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "44054006", "display": "Type 2 diabetes mellitus" }], "text": "Type 2 diabetes mellitus" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "onsetDateTime": "2018-01-20"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-smoking",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-smoking",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "77176002", "display": "Smoker" }], "text": "Current smoker, 20 pack-years" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "onsetDateTime": "2005-01-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-atorvastatin",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-atorvastatin",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "83367", "display": "Atorvastatin" }], "text": "Atorvastatin 40mg" },
+        "subject": { "reference": "Patient/patient-002" },
+        "authoredOn": "2016-08-01",
+        "dosageInstruction": [{ "text": "40mg once daily at bedtime" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-lisinopril-002",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-lisinopril-002",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Lisinopril" }], "text": "Lisinopril 10mg" },
+        "subject": { "reference": "Patient/patient-002" },
+        "authoredOn": "2015-04-01",
+        "dosageInstruction": [{ "text": "10mg once daily" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-metformin-002",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-metformin-002",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "6809", "display": "Metformin" }], "text": "Metformin 500mg" },
+        "subject": { "reference": "Patient/patient-002" },
+        "authoredOn": "2018-02-01",
+        "dosageInstruction": [{ "text": "500mg twice daily" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-aspirin-002",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-aspirin-002",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Aspirin" }], "text": "Aspirin 81mg" },
+        "subject": { "reference": "Patient/patient-002" },
+        "authoredOn": "2016-08-01",
+        "dosageInstruction": [{ "text": "81mg once daily" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-troponin",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-troponin",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "49563-0", "display": "Troponin I" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01T14:30:00Z",
+        "valueQuantity": { "value": 0.08, "unit": "ng/mL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-troponin-2",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-troponin-2",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "49563-0", "display": "Troponin I" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01T17:30:00Z",
+        "valueQuantity": { "value": 0.15, "unit": "ng/mL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-cholesterol-total",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-cholesterol-total",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2093-3", "display": "Total Cholesterol" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-11-01",
+        "valueQuantity": { "value": 245, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-hdl",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hdl",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2085-9", "display": "HDL Cholesterol" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-11-01",
+        "valueQuantity": { "value": 38, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-ldl",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-ldl",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2089-1", "display": "LDL Cholesterol" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-11-01",
+        "valueQuantity": { "value": 168, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-hba1c-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hba1c-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "4548-4", "display": "Hemoglobin A1c" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-11-01",
+        "valueQuantity": { "value": 7.8, "unit": "%" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-glucose-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-glucose-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2345-7", "display": "Glucose" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01",
+        "valueQuantity": { "value": 185, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-creatinine-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-creatinine-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2160-0", "display": "Creatinine" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-11-01",
+        "valueQuantity": { "value": 1.1, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-bp-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-bp-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "85354-9", "display": "Blood pressure panel" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01",
+        "component": [
+          { "code": { "coding": [{ "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure" }] }, "valueQuantity": { "value": 162, "unit": "mmHg" } },
+          { "code": { "coding": [{ "system": "http://loinc.org", "code": "8462-4", "display": "Diastolic blood pressure" }] }, "valueQuantity": { "value": 95, "unit": "mmHg" } }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-hr-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hr-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "8867-4", "display": "Heart rate" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01",
+        "valueQuantity": { "value": 96, "unit": "bpm" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-ecg",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-ecg",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "11524-6", "display": "ECG study" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01",
+        "valueString": "ST depression in leads V4-V6, T-wave inversions in lateral leads"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-weight-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-weight-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body Weight" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01",
+        "valueQuantity": { "value": 98, "unit": "kg" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-height-002",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-height-002",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "8302-2", "display": "Body Height" }] },
+        "subject": { "reference": "Patient/patient-002" },
+        "effectiveDateTime": "2025-12-01",
+        "valueQuantity": { "value": 175, "unit": "cm" }
+      }
+    }
+  ]
+}

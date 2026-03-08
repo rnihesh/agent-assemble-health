@@ -1,0 +1,250 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:patient-003",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-003",
+        "name": [{ "given": ["Margaret"], "family": "Thompson" }],
+        "gender": "female",
+        "birthDate": "1960-09-12",
+        "address": [{ "line": ["321 Pine Rd"], "city": "Boston", "state": "MA", "postalCode": "02101" }],
+        "telecom": [{ "system": "phone", "value": "617-555-0303" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-afib-003",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-afib-003",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "49436004", "display": "Atrial fibrillation" }], "text": "Atrial fibrillation" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "onsetDateTime": "2019-04-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-osteoarthritis",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-osteoarthritis",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "396275006", "display": "Osteoarthritis" }], "text": "Osteoarthritis of bilateral knees" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "onsetDateTime": "2017-06-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-depression",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-depression",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "35489007", "display": "Major depressive disorder" }], "text": "Major depressive disorder, recurrent" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "onsetDateTime": "2014-11-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-gerd",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-gerd",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "235595009", "display": "Gastroesophageal reflux disease" }], "text": "GERD" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "onsetDateTime": "2020-02-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-htn-003",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-htn-003",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "38341003", "display": "Hypertension" }], "text": "Hypertension" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "onsetDateTime": "2013-05-20"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-warfarin-003",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-warfarin-003",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "11289", "display": "Warfarin" }], "text": "Warfarin 5mg" },
+        "subject": { "reference": "Patient/patient-003" },
+        "authoredOn": "2019-05-01",
+        "dosageInstruction": [{ "text": "5mg once daily, adjusted by INR" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-ibuprofen",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-ibuprofen",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Ibuprofen" }], "text": "Ibuprofen 600mg" },
+        "subject": { "reference": "Patient/patient-003" },
+        "authoredOn": "2025-11-15",
+        "dosageInstruction": [{ "text": "600mg three times daily as needed for knee pain" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-sertraline",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-sertraline",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Sertraline" }], "text": "Sertraline 100mg" },
+        "subject": { "reference": "Patient/patient-003" },
+        "authoredOn": "2014-12-01",
+        "dosageInstruction": [{ "text": "100mg once daily in the morning" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-omeprazole",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-omeprazole",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Omeprazole" }], "text": "Omeprazole 20mg" },
+        "subject": { "reference": "Patient/patient-003" },
+        "authoredOn": "2020-03-01",
+        "dosageInstruction": [{ "text": "20mg once daily before breakfast" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-amlodipine",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-amlodipine",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Amlodipine" }], "text": "Amlodipine 5mg" },
+        "subject": { "reference": "Patient/patient-003" },
+        "authoredOn": "2013-06-01",
+        "dosageInstruction": [{ "text": "5mg once daily" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-tramadol",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-tramadol",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Tramadol" }], "text": "Tramadol 50mg" },
+        "subject": { "reference": "Patient/patient-003" },
+        "authoredOn": "2025-11-20",
+        "dosageInstruction": [{ "text": "50mg every 6 hours as needed for severe pain" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:allergy-pcn-003",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "allergy-pcn-003",
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "code": { "coding": [{ "display": "Penicillin" }], "text": "Penicillin" },
+        "criticality": "high",
+        "patient": { "reference": "Patient/patient-003" },
+        "reaction": [{ "manifestation": [{ "coding": [{ "display": "Anaphylaxis" }], "text": "Anaphylaxis" }], "severity": "severe" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:allergy-codeine",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "allergy-codeine",
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "code": { "coding": [{ "display": "Codeine" }], "text": "Codeine" },
+        "criticality": "high",
+        "patient": { "reference": "Patient/patient-003" },
+        "reaction": [{ "manifestation": [{ "coding": [{ "display": "Respiratory distress" }], "text": "Respiratory distress" }], "severity": "severe" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-inr-003",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-inr-003",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "6301-6", "display": "INR" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "effectiveDateTime": "2025-11-25",
+        "valueQuantity": { "value": 3.8, "unit": "INR" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-creatinine-003",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-creatinine-003",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2160-0", "display": "Creatinine" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "effectiveDateTime": "2025-11-20",
+        "valueQuantity": { "value": 0.9, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-potassium-003",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-potassium-003",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2823-3", "display": "Potassium" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "effectiveDateTime": "2025-11-20",
+        "valueQuantity": { "value": 4.2, "unit": "mEq/L" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-hgb-003",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hgb-003",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "718-7", "display": "Hemoglobin" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "effectiveDateTime": "2025-11-20",
+        "valueQuantity": { "value": 10.8, "unit": "g/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-bp-003",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-bp-003",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "85354-9", "display": "Blood pressure panel" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "effectiveDateTime": "2025-11-25",
+        "component": [
+          { "code": { "coding": [{ "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure" }] }, "valueQuantity": { "value": 138, "unit": "mmHg" } },
+          { "code": { "coding": [{ "system": "http://loinc.org", "code": "8462-4", "display": "Diastolic blood pressure" }] }, "valueQuantity": { "value": 82, "unit": "mmHg" } }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-hr-003",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hr-003",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "8867-4", "display": "Heart rate" }] },
+        "subject": { "reference": "Patient/patient-003" },
+        "effectiveDateTime": "2025-11-25",
+        "valueQuantity": { "value": 82, "unit": "bpm" }
+      }
+    }
+  ]
+}

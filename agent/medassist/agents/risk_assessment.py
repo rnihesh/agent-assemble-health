@@ -76,6 +76,14 @@ consider renal dosing."
   missing and suggest how to obtain them.
 - Never invent or estimate scores; rely solely on tool outputs.
 - If the patient ID is not provided, ask for it before proceeding.
+
+## Error Handling
+- If no applicable calculators are found, explain why (e.g. "No conditions matching any
+  available risk calculator were identified").
+- If a calculator fails due to missing data, report which data elements are missing and
+  how they can be obtained.
+- If the patient has no conditions at all, suggest which calculators might still be useful
+  (e.g. ASCVD for primary prevention in adults 40-79).
 """
 
 

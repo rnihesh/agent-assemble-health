@@ -70,6 +70,18 @@ Examples of queries to handle directly:
 - Always flag critical findings prominently (e.g. critical lab values, dangerous
   interactions).
 - Include a standard disclaimer when providing clinical recommendations.
+
+## Error Handling
+
+- If a tool call fails with a connection error, inform the user that the MCP server may be
+  unavailable and suggest checking server status.
+- If a tool returns empty or no data, clearly state which data is missing rather than
+  making assumptions.
+- If the patient ID does not match any patient in the FHIR server, report the error clearly
+  and ask the user to verify the ID.
+- For timeout errors, suggest the user try again. If the error persists, suggest checking
+  server load and connectivity.
+- Never silently drop errors -- always surface them to the user with actionable context.
 """
 
 

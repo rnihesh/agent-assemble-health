@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedAssist -- Clinical Decision Support</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>MedAssist</h1>
+        <p class="subtitle">Clinical Decision Support</p>
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label" for="patient-id">Patient ID</label>
+        <div class="input-group">
+          <input type="text" id="patient-id" placeholder="e.g. patient-001" />
+          <button id="btn-load" class="btn btn-primary">Load</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <span class="field-label">Tools</span>
+        <nav class="tool-nav">
+          <button class="tool-btn active" data-tool="patient-summary">
+            Patient Summary
+          </button>
+          <button class="tool-btn" data-tool="drug-interactions">
+            Drug Interactions
+          </button>
+          <button class="tool-btn" data-tool="lab-results">
+            Lab Results
+          </button>
+          <button class="tool-btn" data-tool="risk-score">
+            Risk Scores
+          </button>
+          <button class="tool-btn" data-tool="care-gaps">
+            Care Gaps
+          </button>
+          <button class="tool-btn" data-tool="clinical-guidelines">
+            Clinical Guidelines
+          </button>
+        </nav>
+      </div>
+
+      <!-- Tool-specific inputs -->
+      <div class="sidebar-section tool-options" id="options-drug-interactions" style="display:none">
+        <label class="field-label" for="med-list">Additional Medications</label>
+        <textarea id="med-list" rows="3" placeholder="One per line, e.g.&#10;ibuprofen&#10;amoxicillin"></textarea>
+      </div>
+
+      <div class="sidebar-section tool-options" id="options-lab-results" style="display:none">
+        <label class="field-label" for="lookback-days">Lookback (days)</label>
+        <input type="number" id="lookback-days" value="90" min="1" max="730" />
+      </div>
+
+      <div class="sidebar-section tool-options" id="options-risk-score" style="display:none">
+        <label class="field-label" for="calculator-select">Calculator</label>
+        <select id="calculator-select">
+          <option value="CHA2DS2-VASc">CHA2DS2-VASc (Stroke / AFib)</option>
+          <option value="HEART">HEART (Chest Pain)</option>
+          <option value="Wells-DVT">Wells DVT</option>
+          <option value="Wells-PE">Wells PE</option>
+          <option value="ASCVD">ASCVD 10-Year Risk</option>
+          <option value="CKD-EPI">CKD-EPI eGFR</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section tool-options" id="options-clinical-guidelines" style="display:none">
+        <label class="field-label" for="condition-input">Condition (optional)</label>
+        <input type="text" id="condition-input" placeholder="e.g. diabetes, hypertension" />
+      </div>
+
+      <div class="sidebar-section">
+        <button id="btn-run" class="btn btn-primary btn-full">Run Analysis</button>
+      </div>
+
+      <div class="sidebar-section sidebar-footer">
+        <p class="meta-text">MedAssist v1.0.0</p>
+        <p class="meta-text">For clinical decision support only.</p>
+        <p class="meta-text">Does not replace clinical judgment.</p>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+      <header class="main-header">
+        <div class="header-left">
+          <h2 id="tool-title">Patient Summary</h2>
+          <span class="header-meta" id="patient-label"></span>
+        </div>
+        <div class="header-right">
+          <span class="status" id="status-indicator"></span>
+        </div>
+      </header>
+
+      <div class="results-container" id="results">
+        <div class="empty-state">
+          <p class="empty-title">No results yet</p>
+          <p class="empty-body">Enter a Patient ID and click "Run Analysis" to begin.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -70,6 +70,14 @@ Numbered list of concrete clinical actions for the care team, sorted by urgency.
 - Cite guideline sources (e.g. USPSTF, AHA/ACC, KDIGO) when making recommendations.
 - Never fabricate data; if a tool returns no data for a section, note "No data available."
 - If the patient ID is not provided in the user message, ask for it before proceeding.
+
+## Error Handling
+- If the patient ID is invalid or not found, immediately report the error and do NOT proceed
+  with partial data.
+- If any tool call fails, include the error in the relevant section (e.g. "Lab Results:
+  Unable to retrieve -- [error message]") and continue with other sections.
+- If the patient has no conditions, medications, or labs, state this clearly rather than
+  skipping the section entirely.
 """
 
 

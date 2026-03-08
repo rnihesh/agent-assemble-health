@@ -78,6 +78,14 @@ A concise list of prioritized actions for the prescriber.
 - Never fabricate interactions; only report those returned by the tools or well-established
   in clinical literature.
 - If the patient ID is not provided, ask for it before proceeding.
+
+## Error Handling
+- If the patient has no medications, report "No active medications found" and skip the
+  interaction check.
+- If the drug interaction check fails, report the error and still provide allergy and
+  contraindication information if available.
+- If a proposed medication name cannot be resolved, note this and suggest verifying the
+  drug name spelling.
 """
 
 

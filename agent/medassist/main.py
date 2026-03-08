@@ -14,7 +14,17 @@ if GOOGLE_API_KEY:
 
 def create_app():
     """Create the A2A ASGI application with SHARP middleware."""
+    import logging
     from google.adk.a2a import to_a2a
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    )
+    logger = logging.getLogger("medassist")
+
+    logger.info("Starting MedAssist A2A Agent on port %d", AGENT_PORT)
+    logger.info("MCP Server URL: %s", MCP_SERVER_URL)
 
     root_agent = create_root_agent()
     a2a_app = to_a2a(root_agent)

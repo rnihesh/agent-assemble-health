@@ -1,0 +1,183 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:patient-004",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-004",
+        "name": [{ "given": ["Sarah"], "family": "Martinez" }],
+        "gender": "female",
+        "birthDate": "1980-11-03",
+        "address": [{ "line": ["567 Maple Dr"], "city": "Houston", "state": "TX", "postalCode": "77001" }],
+        "telecom": [{ "system": "phone", "value": "713-555-0404" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-htn-004",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-htn-004",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "38341003", "display": "Hypertension" }], "text": "Hypertension" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "onsetDateTime": "2020-06-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cond-obesity",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-obesity",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "414916001", "display": "Obesity" }], "text": "Obesity, BMI 32" },
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "onsetDateTime": "2019-03-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:med-hctz",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-hctz",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": { "coding": [{ "display": "Hydrochlorothiazide" }], "text": "Hydrochlorothiazide 25mg" },
+        "subject": { "reference": "Patient/patient-004" },
+        "authoredOn": "2020-07-01",
+        "dosageInstruction": [{ "text": "25mg once daily" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:allergy-none",
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "allergy-none",
+        "clinicalStatus": { "coding": [{ "code": "active" }] },
+        "verificationStatus": { "coding": [{ "code": "confirmed" }] },
+        "code": { "coding": [{ "display": "No known drug allergies" }], "text": "NKDA" },
+        "patient": { "reference": "Patient/patient-004" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-bp-004",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-bp-004",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "85354-9", "display": "Blood pressure panel" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "effectiveDateTime": "2025-11-20",
+        "component": [
+          { "code": { "coding": [{ "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure" }] }, "valueQuantity": { "value": 132, "unit": "mmHg" } },
+          { "code": { "coding": [{ "system": "http://loinc.org", "code": "8462-4", "display": "Diastolic blood pressure" }] }, "valueQuantity": { "value": 84, "unit": "mmHg" } }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-glucose-004",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-glucose-004",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2345-7", "display": "Glucose" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "effectiveDateTime": "2025-10-15",
+        "valueQuantity": { "value": 105, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-cholesterol-004",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-cholesterol-004",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2093-3", "display": "Total Cholesterol" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "effectiveDateTime": "2025-10-15",
+        "valueQuantity": { "value": 210, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-creatinine-004",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-creatinine-004",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "2160-0", "display": "Creatinine" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "effectiveDateTime": "2025-10-15",
+        "valueQuantity": { "value": 0.8, "unit": "mg/dL" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-weight-004",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-weight-004",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "29463-7", "display": "Body Weight" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "effectiveDateTime": "2025-11-20",
+        "valueQuantity": { "value": 88, "unit": "kg" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-height-004",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-height-004",
+        "status": "final",
+        "code": { "coding": [{ "system": "http://loinc.org", "code": "8302-2", "display": "Body Height" }] },
+        "subject": { "reference": "Patient/patient-004" },
+        "effectiveDateTime": "2025-11-20",
+        "valueQuantity": { "value": 165, "unit": "cm" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:imm-flu-004",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "imm-flu-004",
+        "status": "completed",
+        "vaccineCode": { "coding": [{ "display": "Influenza vaccine" }], "text": "Influenza vaccine" },
+        "patient": { "reference": "Patient/patient-004" },
+        "occurrenceDateTime": "2024-10-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:imm-tdap",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "imm-tdap",
+        "status": "completed",
+        "vaccineCode": { "coding": [{ "display": "Tdap vaccine" }], "text": "Tdap vaccine" },
+        "patient": { "reference": "Patient/patient-004" },
+        "occurrenceDateTime": "2015-06-01"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:proc-mammogram",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "proc-mammogram",
+        "status": "completed",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "71651007", "display": "Mammography" }], "text": "Screening mammogram" },
+        "subject": { "reference": "Patient/patient-004" },
+        "performedDateTime": "2023-03-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:proc-pap",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "proc-pap",
+        "status": "completed",
+        "code": { "coding": [{ "system": "http://snomed.info/sct", "code": "440623000", "display": "Cervical cancer screening" }], "text": "Pap smear with HPV co-test" },
+        "subject": { "reference": "Patient/patient-004" },
+        "performedDateTime": "2021-08-10"
+      }
+    }
+  ]
+}
