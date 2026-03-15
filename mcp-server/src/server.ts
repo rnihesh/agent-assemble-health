@@ -24,7 +24,7 @@ function buildClient(meta: unknown): FHIRClient {
 /**
  * Resolve the patientId from either the explicit input or the SHARP _meta context.
  */
-function resolvePatientId(
+export function resolvePatientId(
   inputPatientId: string | undefined,
   meta: unknown,
 ): string | undefined {
@@ -46,7 +46,10 @@ export function createMcpServer(): McpServer {
     {
       patientId: z
         .string()
-        .describe("The FHIR Patient resource ID."),
+        .optional()
+        .describe(
+          "The FHIR Patient resource ID. Optional when provided via SHARP launch context in _meta.",
+        ),
       sections: z
         .array(
           z.enum([
@@ -66,9 +69,22 @@ export function createMcpServer(): McpServer {
     },
     async (params, extra) => {
       try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const client = buildClient(extra?._meta);
         const text = await patientSummary(client, {
-          patientId: params.patientId,
+          patientId: pid,
           sections: params.sections,
         });
         return { content: [{ type: "text", text }] };
@@ -147,7 +163,10 @@ export function createMcpServer(): McpServer {
     {
       patientId: z
         .string()
-        .describe("The FHIR Patient resource ID."),
+        .optional()
+        .describe(
+          "The FHIR Patient resource ID. Optional when provided via SHARP launch context in _meta.",
+        ),
       lookbackDays: z
         .number()
         .optional()
@@ -158,9 +177,22 @@ export function createMcpServer(): McpServer {
     },
     async (params, extra) => {
       try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const client = buildClient(extra?._meta);
         const text = await interpretLabResults(client, {
-          patientId: params.patientId,
+          patientId: pid,
           lookbackDays: params.lookbackDays,
         });
         return { content: [{ type: "text", text }] };
@@ -185,7 +217,10 @@ export function createMcpServer(): McpServer {
     {
       patientId: z
         .string()
-        .describe("The FHIR Patient resource ID."),
+        .optional()
+        .describe(
+          "The FHIR Patient resource ID. Optional when provided via SHARP launch context in _meta.",
+        ),
       calculator: z
         .enum([
           "CHA2DS2-VASc",
@@ -199,9 +234,22 @@ export function createMcpServer(): McpServer {
     },
     async (params, extra) => {
       try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const client = buildClient(extra?._meta);
         const text = await calculateRiskScore(client, {
-          patientId: params.patientId,
+          patientId: pid,
           calculator: params.calculator,
         });
         return { content: [{ type: "text", text }] };
@@ -226,13 +274,29 @@ export function createMcpServer(): McpServer {
     {
       patientId: z
         .string()
-        .describe("The FHIR Patient resource ID."),
+        .optional()
+        .describe(
+          "The FHIR Patient resource ID. Optional when provided via SHARP launch context in _meta.",
+        ),
     },
     async (params, extra) => {
       try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
         const client = buildClient(extra?._meta);
         const text = await identifyCareGaps(client, {
-          patientId: params.patientId,
+          patientId: pid,
         });
         return { content: [{ type: "text", text }] };
       } catch (err) {

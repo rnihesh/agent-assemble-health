@@ -48,6 +48,20 @@ class TestConfig:
         importlib.reload(cfg)
         assert cfg.GOOGLE_API_KEY == ""
 
+    def test_default_agent_public_url_empty(self, monkeypatch):
+        monkeypatch.delenv("AGENT_PUBLIC_URL", raising=False)
+        import importlib
+        import medassist.config as cfg
+        importlib.reload(cfg)
+        assert cfg.AGENT_PUBLIC_URL == ""
+
+    def test_custom_agent_public_url(self, monkeypatch):
+        monkeypatch.setenv("AGENT_PUBLIC_URL", "https://agent.example.com")
+        import importlib
+        import medassist.config as cfg
+        importlib.reload(cfg)
+        assert cfg.AGENT_PUBLIC_URL == "https://agent.example.com"
+
 
 # ---------------------------------------------------------------------------
 # Agent card tests

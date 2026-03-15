@@ -106,6 +106,48 @@ function buildApiClient(): FHIRClient {
   return new FHIRClient(ENV.FHIR_BASE_URL, ENV.FHIR_ACCESS_TOKEN);
 }
 
+async function checkFhirHealth(): Promise<Record<string, unknown>> {
+  const metadataUrl = `${ENV.FHIR_BASE_URL.replace(/\/+$/, "")}/metadata`;
+  const headers: Record<string, string> = {
+    Accept: "application/fhir+json",
+  };
+
+  if (ENV.FHIR_ACCESS_TOKEN) {
+    headers.Authorization = `Bearer ${ENV.FHIR_ACCESS_TOKEN}`;
+  }
+
+  try {
+    const response = await fetch(metadataUrl, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unhealthy",
+        statusCode: response.status,
+        metadataUrl,
+      };
+    }
+
+    const body = await response.json().catch(() => ({}));
+    return {
+      status: "ok",
+      metadataUrl,
+      fhirVersion:
+        typeof body?.fhirVersion === "string" ? body.fhirVersion : undefined,
+      software:
+        typeof body?.software?.name === "string" ? body.software.name : undefined,
+    };
+  } catch (error) {
+    return {
+      status: "unreachable",
+      metadataUrl,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 app.post("/api/patient-summary", async (req, res) => {
   try {
     const { patientId, sections } = req.body;
@@ -203,14 +245,32 @@ app.post("/api/clinical-guidelines", async (req, res) => {
 });
 
 // ── Health check ────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => {
-  res.json({
+app.get("/health", async (req, res) => {
+  const deep =
+    req.query.deep === "1" ||
+    req.query.deep === "true" ||
+    req.query.fhir === "1" ||
+    req.query.fhir === "true";
+
+  const payload: Record<string, unknown> = {
     status: "ok",
     name: "medassist-mcp-server",
     version: "1.0.0",
     activeSessions: transports.size,
     fhirBaseUrl: ENV.FHIR_BASE_URL,
-  });
+  };
+
+  if (deep) {
+    const fhir = await checkFhirHealth();
+    payload.fhir = fhir;
+    if (fhir.status !== "ok") {
+      payload.status = "degraded";
+      res.status(503).json(payload);
+      return;
+    }
+  }
+
+  res.json(payload);
 });
 
 // ── Start server ────────────────────────────────────────────────────────────
