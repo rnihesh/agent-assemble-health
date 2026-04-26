@@ -1,6 +1,20 @@
 # MedAssist Project Status
 
-Last updated: 2026-04-27 (post-Track-A, post-Track-B, post-E1).
+Last updated: 2026-04-27 (post-iteration-6, six iterations on `main`).
+
+## Iterations on main
+
+| # | Commit | What it shipped |
+|---|--------|-----------------|
+| 1 | `8515ec3` | Snapshot of pre-rebuild dashboard work + the multi-track ship plan |
+| 2 | `3414518` | Track A — SHARP correctness (canonical headers, MCP capability declaration, A2A FHIR-context hook, agent card v1) |
+| 3 | `66e6f4e` | Track B — frontend rebuild as editorial-clinical workbench |
+| 4 | `b4737fe` | gitignore .tmp-screenshots/ |
+| 5 | `6218a62` | E1 — verified Synthea demo patients + project-status update |
+| 6 | `2050393` | F2 — inline FHIR resource citations on every clinical claim |
+| 7 | `1ae94e3` | F1 — `differential_diagnosis` LLM-powered MCP tool with cited reasoning |
+| 8 | `3b48523` | F3 + polish — `clinical_handoff` orchestrator + abbreviated FHIR-ref rendering + curated demo scenarios |
+| 9 | `01a1fe0` | F4 — deterministic quality eval harness emitting `docs/eval-results.md` |
 
 ## What Is Done
 
@@ -29,11 +43,19 @@ Last updated: 2026-04-27 (post-Track-A, post-Track-B, post-E1).
   - All three are documented in [docs/test-scenarios.md](docs/test-scenarios.md) with verified tool outputs.
 - Visual walkthrough via Chrome DevTools MCP confirmed the rebuilt dashboard renders rich Synthea data cleanly: patient_summary on Considine (22 conditions, immunization history), CHA2DS2-VASc on Pacocha (Score 2/9, High risk, DOAC recommendation, variables table with rules between rows), status popover showing all three services green.
 
+### Iteration 6: citations, LLM differential, handoff, eval (commits 2050393–01a1fe0)
+
+- Every clinical claim emitted by patient_summary, interpret_lab_results, check_drug_interactions, and identify_care_gaps carries a `Type/id` FHIR resource reference that the dashboard abbreviates to `Type/…<last 8>` (full id in `title=` for hover audit). The differential-diagnosis LLM tool sees these citations in its grounding context and re-cites them in supporting findings — a clinician can audit every claim back to its FHIR resource.
+- `differential_diagnosis` (7th MCP tool) is the AI-Factor showcase. Takes a chief complaint, fetches patient summary as grounding context, calls an OpenAI-compatible LLM (NOWBIND/Azure default, OpenAI fallback), parses JSON, renders ranked candidates with supporting / contradicting findings, recommended next steps, and ICD/SNOMED codes. Live-verified with NOWBIND/`gpt-4o` against the polypharmacy hero — produced a clinically coherent ranked DDx (CHF, CKD, nephrotic syndrome, cirrhosis, hypothyroidism) citing actual `Condition/...` resources from her record. LLM client is deferred-injectable in tests (no live calls in CI).
+- `clinical_handoff` (8th MCP tool) composes patient_summary + interpret_lab_results + check_drug_interactions + identify_care_gaps + auto-selected risk scores into a structured shift-handoff document. Risk-score selection is condition-driven (CHA2DS2-VASc on AFib, ASCVD on cardiac risk factors, CKD-EPI on renal disease). Action items are derived from what's actually flagged. Sequential orchestration to stay friendly with the public HAPI sandbox.
+- Quality eval harness (`npm run eval` from mcp-server) regenerates [docs/eval-results.md](eval-results.md) with per-tool latency, citation density, and section-presence metrics. Initial run: 8/8 tools pass section presence, sub-millisecond per-tool against the in-memory fixture, 29 FHIR citations across the run.
+
 ### Test coverage
 
-- MCP server: 184 tests passing across 9 suites (was 161 pre-Track-A, +23).
-- Agent: 69 tests passing across 4 suites (was 34, +35).
+- MCP server: **209 tests** across 13 suites (was 161 pre-Track-A; +48 across the iterations).
+- Agent: 69 tests across 4 suites (was 34; +35 in Track A).
 - TypeScript `tsc --noEmit` clean.
+- `docs/eval-results.md` regenerated with `npm run eval`.
 
 ## What Was Verified Locally (this session)
 
@@ -62,13 +84,17 @@ External / manual / user-owned:
 - The agent card's `url` field is required by the upstream `a2a-sdk` 0.3.x but stripped from the served JSON via `serialize_agent_card_v1`. If a future SDK release adopts v1 natively, the shim can be removed.
 - `serverInfo` does not declare authentication mode. Kept anonymous to match hackathon scope; SHARP spec permits it.
 
-## Repository Layout (post-E1)
+## Repository Layout (current)
 
-- `mcp-server/` — TypeScript MCP server with six clinical tools, 184 tests.
+- `mcp-server/` — TypeScript MCP server with **eight** clinical tools (six rule-based, one LLM-powered, one orchestrator), 209 tests.
+- `mcp-server/scripts/eval.ts` — deterministic quality eval harness; `npm run eval` regenerates `docs/eval-results.md`.
+- `mcp-server/src/external/llm.ts` — OpenAI-compatible client factory (NOWBIND default, OpenAI fallback).
 - `agent/` — Python A2A agent (Google ADK + `to_a2a()`), four sub-agents, 69 tests.
 - `frontend/` — rebuilt clinical workbench dashboard. Files: `design-tokens.css`, `styles.css`, `index.html`, `app.js`.
-- `docs/plans/` — multi-track ship plan and any subsequent plans.
+- `docs/plans/` — five sequential plan documents (snapshot ship plan, citations, differential diagnosis, handoff + polish, eval harness).
+- `docs/brainstorms/` — feature prioritization against hackathon judging rubric.
 - `docs/test-scenarios.md` — three Synthea demo patients + legacy fixture-based scenarios.
+- `docs/eval-results.md` — measurable quality claims regeneratable on demand.
 - `docs/promptopinion-submission.md` — user-owned, will exist after Track D.
 - `scripts/` — `run-all.sh`, `setup.sh`, `smoke-test.sh`.
 
