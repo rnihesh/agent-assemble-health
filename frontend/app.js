@@ -109,6 +109,29 @@
       validationMessage:
         "Stage a patient or enter a condition (for example, diabetes) to match guidelines.",
     },
+    "differential-diagnosis": {
+      label: "Differential Diagnosis",
+      lede:
+        "LLM-powered ranked differential. Reasons over the patient's longitudinal record against a chief complaint and surfaces 3–5 candidates with cited findings.",
+      endpoint: "/api/differential-diagnosis",
+      requiresPatient: true,
+      fields: ["chief-complaint", "additional-context"],
+      loading: "Reasoning over the patient's record against the chief complaint",
+      buildBody(ctx) {
+        const body = { patientId: ctx.patientId };
+        if (ctx.chiefComplaint) body.chiefComplaint = ctx.chiefComplaint.trim();
+        if (ctx.additionalContext) body.additionalContext = ctx.additionalContext.trim();
+        return body;
+      },
+      validate(body) {
+        return (
+          typeof body.chiefComplaint === "string" &&
+          body.chiefComplaint.length > 0
+        );
+      },
+      validationMessage:
+        "Enter a chief complaint, e.g. \"72yo F, progressive fatigue and bilateral edema over 6 weeks\".",
+    },
   };
 
   // Two scenarios — strongest demos. Drop the original five.
@@ -160,11 +183,15 @@
       "lookback-days": document.querySelector('[data-field="lookback-days"]'),
       "calculator": document.querySelector('[data-field="calculator"]'),
       "condition": document.querySelector('[data-field="condition"]'),
+      "chief-complaint": document.querySelector('[data-field="chief-complaint"]'),
+      "additional-context": document.querySelector('[data-field="additional-context"]'),
     },
     medList: $("med-list"),
     lookback: $("lookback-days"),
     calculator: $("calculator"),
     condition: $("condition"),
+    chiefComplaint: $("chief-complaint"),
+    additionalContext: $("additional-context"),
     runBtn: $("run-btn"),
     resetBtn: $("reset-btn"),
     retryBtn: $("retry-btn"),
@@ -227,6 +254,8 @@
     refs.lookback.addEventListener("input", saveDraft);
     refs.calculator.addEventListener("change", saveDraft);
     refs.condition.addEventListener("input", saveDraft);
+    refs.chiefComplaint.addEventListener("input", saveDraft);
+    refs.additionalContext.addEventListener("input", saveDraft);
 
     refs.copyBtn.addEventListener("click", copyResult);
     refs.downloadBtn.addEventListener("click", downloadResult);
@@ -446,6 +475,8 @@
       lookbackDays: refs.lookback.value,
       calculator: refs.calculator.value,
       condition: refs.condition.value.trim(),
+      chiefComplaint: refs.chiefComplaint.value,
+      additionalContext: refs.additionalContext.value.trim(),
     };
   }
 
@@ -759,6 +790,8 @@
           lookbackDays: refs.lookback.value,
           calculator: refs.calculator.value,
           condition: refs.condition.value.trim(),
+          chiefComplaint: refs.chiefComplaint.value,
+          additionalContext: refs.additionalContext.value.trim(),
         })
       );
     } catch (_) {}
@@ -775,6 +808,8 @@
       if (draft.lookbackDays) refs.lookback.value = draft.lookbackDays;
       if (draft.calculator) refs.calculator.value = draft.calculator;
       if (typeof draft.condition === "string") refs.condition.value = draft.condition;
+      if (typeof draft.chiefComplaint === "string") refs.chiefComplaint.value = draft.chiefComplaint;
+      if (typeof draft.additionalContext === "string") refs.additionalContext.value = draft.additionalContext;
     } catch (_) {}
   }
 

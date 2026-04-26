@@ -20,4 +20,12 @@ export const ENV = {
     `http://localhost:${process.env.AGENT_PORT ?? "8001"}`,
   LOG_LEVEL: process.env.LOG_LEVEL ?? "info",
   OPENFDA_API_KEY: process.env.OPENFDA_API_KEY ?? undefined,
+
+  // ── LLM (differential_diagnosis tool) ────────────────────────────────────
+  // Provider precedence: NOWBIND first, then OpenAI direct.
+  NOWBIND_API_KEY: process.env.NOWBIND_AGENT_OPENAI_API_KEY ?? undefined,
+  NOWBIND_BASE_URL: process.env.NOWBIND_AGENT_OPENAI_BASE_URL ?? undefined,
+  NOWBIND_MODEL: process.env.NOWBIND_AGENT_OPENAI_MODEL ?? "gpt-4o",
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? undefined,
+  OPENAI_DEFAULT_MODEL: process.env.OPENAI_DEFAULT_MODEL ?? "gpt-4o-mini",
 } as const;

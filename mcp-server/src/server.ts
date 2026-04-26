@@ -10,6 +10,7 @@ import { interpretLabResults } from "./tools/lab-interpreter.js";
 import { calculateRiskScore } from "./tools/risk-calculator.js";
 import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
+import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 
 /**
  * MCP capability declaration for the Prompt Opinion FHIR-context extension.
@@ -407,6 +408,65 @@ export function createMcpServer(): McpServer {
             {
               type: "text",
               text: `Error matching guidelines: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // ── differential_diagnosis ───────────────────────────────────────────────
+  server.tool(
+    "differential_diagnosis",
+    "LLM-powered ranked differential diagnosis. Takes a chief complaint and reasons over the patient's longitudinal FHIR record (conditions, medications, labs, allergies, immunizations) to surface 3–5 ranked candidates with explicit supporting and contradicting findings, plus recommended next steps. Uses an OpenAI-compatible LLM (NOWBIND/Azure preferred, OpenAI fallback) configured via the MCP server's environment. This is decision support, not a diagnosis — every candidate is a hypothesis for a clinician to evaluate.",
+    {
+      patientId: z
+        .string()
+        .optional()
+        .describe(
+          "FHIR Patient ID. Optional when provided via SHARP launch context in _meta.",
+        ),
+      chiefComplaint: z
+        .string()
+        .describe(
+          "The presenting concern in clinical shorthand, e.g. \"72yo F, progressive fatigue and bilateral lower-extremity edema over 6 weeks\".",
+        ),
+      additionalContext: z
+        .string()
+        .optional()
+        .describe(
+          "Optional clinician-supplied context to refine the differential, e.g. recent travel, exposures, family history.",
+        ),
+    },
+    async (params, extra) => {
+      try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const client = buildClient(extra?._meta);
+        const text = await differentialDiagnosis(client, {
+          patientId: pid,
+          chiefComplaint: params.chiefComplaint,
+          additionalContext: params.additionalContext,
+        });
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error generating differential diagnosis: ${err instanceof Error ? err.message : String(err)}`,
             },
           ],
           isError: true,

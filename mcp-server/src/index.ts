@@ -17,6 +17,7 @@ import { interpretLabResults } from "./tools/lab-interpreter.js";
 import { calculateRiskScore } from "./tools/risk-calculator.js";
 import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
+import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -288,6 +289,30 @@ app.post("/api/clinical-guidelines", async (req, res) => {
   }
 });
 
+app.post("/api/differential-diagnosis", async (req, res) => {
+  try {
+    const { patientId, chiefComplaint, additionalContext } = req.body;
+    if (!patientId) {
+      res.status(400).json({ error: "Provide patientId" });
+      return;
+    }
+    if (!chiefComplaint || typeof chiefComplaint !== "string" || chiefComplaint.trim().length === 0) {
+      res.status(400).json({ error: "Provide chiefComplaint as a non-empty string" });
+      return;
+    }
+    const client = buildApiClient();
+    const result = await differentialDiagnosis(client, {
+      patientId,
+      chiefComplaint,
+      additionalContext,
+    });
+    res.json({ result });
+  } catch (err) {
+    logger.error(err, "differential-diagnosis API error");
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.get("/api/system-status", async (_req, res) => {
   const [fhir, agent] = await Promise.all([
     checkFhirHealth(),
@@ -364,4 +389,5 @@ app.listen(ENV.PORT, () => {
   logger.info(`  POST   /api/risk-score`);
   logger.info(`  POST   /api/care-gaps`);
   logger.info(`  POST   /api/clinical-guidelines`);
+  logger.info(`  POST   /api/differential-diagnosis`);
 });

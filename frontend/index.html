@@ -99,6 +99,9 @@
           <li class="rail__item">
             <button type="button" data-tool="clinical-guidelines">Clinical Guidelines</button>
           </li>
+          <li class="rail__item">
+            <button type="button" data-tool="differential-diagnosis">Differential Diagnosis</button>
+          </li>
         </ul>
       </nav>
 
@@ -138,6 +141,18 @@
               <label for="condition">Condition</label>
               <input type="text" id="condition" placeholder="diabetes, hypertension, COPD…" />
               <p class="helper">Used when no patient is staged, or to scope guideline matching.</p>
+            </div>
+
+            <div class="field" data-field="chief-complaint" hidden>
+              <label for="chief-complaint">Chief complaint</label>
+              <textarea id="chief-complaint" rows="3" placeholder="72yo F, progressive fatigue and bilateral lower-extremity edema over 6 weeks"></textarea>
+              <p class="helper">One or two sentences. The LLM reasons over this against the staged patient's record.</p>
+            </div>
+
+            <div class="field" data-field="additional-context" hidden>
+              <label for="additional-context">Additional context (optional)</label>
+              <input type="text" id="additional-context" placeholder="Recent travel, family history, exposures, etc." />
+              <p class="helper">Anything that should refine the differential.</p>
             </div>
 
             <div class="actions">
