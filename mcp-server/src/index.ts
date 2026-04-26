@@ -18,6 +18,7 @@ import { calculateRiskScore } from "./tools/risk-calculator.js";
 import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
 import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
+import { clinicalHandoff } from "./tools/clinical-handoff.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -289,6 +290,26 @@ app.post("/api/clinical-guidelines", async (req, res) => {
   }
 });
 
+app.post("/api/clinical-handoff", async (req, res) => {
+  try {
+    const { patientId, lookbackDays, includeRiskScores } = req.body;
+    if (!patientId) {
+      res.status(400).json({ error: "Provide patientId" });
+      return;
+    }
+    const client = buildApiClient();
+    const result = await clinicalHandoff(client, {
+      patientId,
+      lookbackDays,
+      includeRiskScores,
+    });
+    res.json({ result });
+  } catch (err) {
+    logger.error(err, "clinical-handoff API error");
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.post("/api/differential-diagnosis", async (req, res) => {
   try {
     const { patientId, chiefComplaint, additionalContext } = req.body;
@@ -390,4 +411,5 @@ app.listen(ENV.PORT, () => {
   logger.info(`  POST   /api/care-gaps`);
   logger.info(`  POST   /api/clinical-guidelines`);
   logger.info(`  POST   /api/differential-diagnosis`);
+  logger.info(`  POST   /api/clinical-handoff`);
 });

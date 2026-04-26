@@ -109,6 +109,18 @@
       validationMessage:
         "Stage a patient or enter a condition (for example, diabetes) to match guidelines.",
     },
+    "clinical-handoff": {
+      label: "Shift Handoff",
+      lede:
+        "Composes a structured shift-handoff: active issues, current meds, allergies, vitals, abnormal labs, interaction concerns, top open care gaps, applicable risk scores, and a numbered action list for the receiving provider.",
+      endpoint: "/api/clinical-handoff",
+      requiresPatient: true,
+      fields: [],
+      loading: "Aggregating active issues, labs, interactions, gaps, and risk scores",
+      buildBody(ctx) {
+        return { patientId: ctx.patientId };
+      },
+    },
     "differential-diagnosis": {
       label: "Differential Diagnosis",
       lede:
@@ -134,8 +146,40 @@
     },
   };
 
-  // Two scenarios — strongest demos. Drop the original five.
+  // Curated demo scenarios. Each preloads the strongest clinical setup for
+  // the named tool against a verified Synthea patient on the public HAPI
+  // sandbox. See docs/test-scenarios.md.
   const SCENARIOS = [
+    {
+      id: "considine-handoff",
+      title: "Shift handoff — Considine, 72F polypharmacy",
+      desc:
+        "Synthea patient with diabetes, hypertension, post-renal-transplant, hyperlipidemia. Shows the orchestration across five tools in one read.",
+      tool: "clinical-handoff",
+      patientId: "6c4769e4-beda-5b20-3ba5-67e01c6daf03",
+      prefill: {},
+    },
+    {
+      id: "considine-ddx",
+      title: "Differential diagnosis — Considine fatigue + edema",
+      desc:
+        "Same complex elder with a new chief complaint. The LLM ranks candidates against her actual record and cites the supporting findings.",
+      tool: "differential-diagnosis",
+      patientId: "6c4769e4-beda-5b20-3ba5-67e01c6daf03",
+      prefill: {
+        chiefComplaint:
+          "72yo F, progressive fatigue and bilateral lower-extremity edema over 6 weeks, recent weight gain of 4 kg",
+      },
+    },
+    {
+      id: "pacocha-risk",
+      title: "Risk + care gaps — Pacocha, 67M",
+      desc:
+        "Synthea patient with diabetes and 21 USPSTF gaps. CHA2DS2-VASc surfaces a real anticoagulation recommendation.",
+      tool: "risk-score",
+      patientId: "99dd324a-1a4e-f640-ab63-729bfd413be4",
+      prefill: { calculator: "CHA2DS2-VASc" },
+    },
     {
       id: "polypharmacy",
       title: "Polypharmacy interaction check",
@@ -624,6 +668,10 @@
       refs.calculator.value = scenario.prefill.calculator;
     if (scenario.prefill && scenario.prefill.condition !== undefined)
       refs.condition.value = scenario.prefill.condition;
+    if (scenario.prefill && scenario.prefill.chiefComplaint !== undefined)
+      refs.chiefComplaint.value = scenario.prefill.chiefComplaint;
+    if (scenario.prefill && scenario.prefill.additionalContext !== undefined)
+      refs.additionalContext.value = scenario.prefill.additionalContext;
     closeScenarios();
     saveDraft();
     toast("Scenario loaded — " + scenario.title);
@@ -1058,8 +1106,28 @@
       /(^|[\s(])\*([^*\n]+)\*(?=[\s.,;:!?)]|$)/g,
       "$1<em>$2</em>"
     );
-    html = html.replace(/\u0001CODE(\d+)\u0001/g, (_, idx) => "<code>" + codes[+idx] + "</code>");
+    html = html.replace(/\u0001CODE(\d+)\u0001/g, (_, idx) =>
+      renderInlineCode(codes[+idx]),
+    );
     return html;
+  }
+
+  // FHIR resource references look like `Condition/abc-123` or
+  // `Observation/1234`. Real-world UUIDs are 36 chars and break the line layout.
+  // Render them as compact pills with the full id in title= for hover/audit.
+  const FHIR_REF_PATTERN = /^([A-Z][A-Za-z]+)\/([A-Za-z0-9._-]{8,})$/;
+
+  function renderInlineCode(content) {
+    const match = content.match(FHIR_REF_PATTERN);
+    if (!match) return "<code>" + content + "</code>";
+    const type = match[1];
+    const id = match[2];
+    const shortId = id.length > 12 ? "…" + id.slice(-8) : id;
+    return (
+      '<code class="fhir-ref" title="' + escAttr(content) + '">' +
+      escHtml(type + "/" + shortId) +
+      "</code>"
+    );
   }
 
   function escHtml(value) {

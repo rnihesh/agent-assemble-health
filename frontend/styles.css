@@ -702,6 +702,12 @@ textarea {
   padding: 1px 4px;
   border-radius: var(--radius-1);
   white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.note code.fhir-ref {
+  cursor: help;
+  border-bottom: 1px dotted var(--accent-strong);
 }
 
 .note pre {

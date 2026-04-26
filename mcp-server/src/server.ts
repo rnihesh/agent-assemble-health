@@ -11,6 +11,7 @@ import { calculateRiskScore } from "./tools/risk-calculator.js";
 import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
 import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
+import { clinicalHandoff } from "./tools/clinical-handoff.js";
 
 /**
  * MCP capability declaration for the Prompt Opinion FHIR-context extension.
@@ -467,6 +468,66 @@ export function createMcpServer(): McpServer {
             {
               type: "text",
               text: `Error generating differential diagnosis: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // ── clinical_handoff ─────────────────────────────────────────────────────
+  server.tool(
+    "clinical_handoff",
+    "Composes a structured shift-handoff document for a patient. Aggregates active conditions, current medications, allergies, latest vitals, abnormal/critical labs from the lookback window, drug-interaction concerns, the top open care gaps, and applicable risk scores (auto-selected based on the patient's condition profile). Returns a Markdown document leading with what needs attention, ending with a numbered action list for the receiving provider.",
+    {
+      patientId: z
+        .string()
+        .optional()
+        .describe(
+          "FHIR Patient ID. Optional when provided via SHARP launch context in _meta.",
+        ),
+      lookbackDays: z
+        .number()
+        .optional()
+        .describe(
+          "How many days back to include labs. Defaults to 90.",
+        ),
+      includeRiskScores: z
+        .boolean()
+        .optional()
+        .describe(
+          "When false, omits the auto-selected risk-score block. Defaults to true.",
+        ),
+    },
+    async (params, extra) => {
+      try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const client = buildClient(extra?._meta);
+        const text = await clinicalHandoff(client, {
+          patientId: pid,
+          lookbackDays: params.lookbackDays,
+          includeRiskScores: params.includeRiskScores,
+        });
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error generating clinical handoff: ${err instanceof Error ? err.message : String(err)}`,
             },
           ],
           isError: true,
