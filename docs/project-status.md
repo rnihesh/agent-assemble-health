@@ -106,6 +106,52 @@ External / manual / user-owned:
 4. Record <3min demo video using `docs/demo-script.md` (D3).
 5. Submit on Devpost before 2026-05-11 23:00 ET (D4).
 
-## Autonomous Work Continuing
+## Morning Handoff (final state from autonomous run)
 
-While the user is asleep, autonomous brainstorm-plan-work iterations continue per their instruction to ship until "hackathon-winning". Next iteration begins immediately after this commit. New plans will land in `docs/plans/` with sequential dating.
+The autonomous brainstorm-plan-work loop ran for **seven iterations** through 2026-04-27 03:00–03:10 UTC. The repo is in a strong submission state.
+
+### What changed while you slept
+
+| What | Why it matters |
+|------|----------------|
+| **8 commits on `main`** (snapshot → SHARP correctness → frontend rebuild → E1 docs → citations → differential diagnosis → handoff + polish → eval harness → docs refresh + test fix). | Atomic, reviewable history. Every commit verifiable on its own. |
+| **8 MCP tools** (was 6): added `differential_diagnosis` (LLM-powered) and `clinical_handoff` (orchestrator). | AI Factor showcase + concrete time-savings demo claim. |
+| **Inline FHIR resource citations** on every clinical claim, abbreviated to `Type/…<last 8>` in the dashboard with full id in `title=` for hover audit. | Auditability — judges who think about feasibility will recognize this immediately. |
+| **NOWBIND/Azure LLM client** wired with OpenAI fallback; `.env` populated locally (gitignored). | Live-verified: NOWBIND/`gpt-4o` produced clinically coherent ranked DDx for the polypharmacy hero with cited findings. |
+| **Quality eval harness** (`npm run eval`) producing [eval-results.md](eval-results.md) — 8/8 tools pass section-presence checks, sub-millisecond p50, 29 citations across the run. | Measurable rigor signal in the repo for judges. |
+| **README + `.env.example`** rewritten to match current state. | First-impression alignment. |
+| **209 MCP tests + 69 agent tests** all passing. | Regression-clean across every iteration. |
+
+### Final commit log
+
+| # | Commit | Subject |
+|---|--------|---------|
+| 1 | `8515ec3` | chore: snapshot pre-rebuild dashboard work + add ship plan |
+| 2 | `3414518` | feat: ship Track A SHARP correctness for Agents Assemble |
+| 3 | `66e6f4e` | feat(frontend): rebuild dashboard as editorial-clinical workbench |
+| 4 | `b4737fe` | chore: ignore .tmp-screenshots/ from chrome-devtools-mcp |
+| 5 | `6218a62` | docs: record E1 verification + curated Synthea demo patients |
+| 6 | `2050393` | feat(tools): cite FHIR resources inline in clinical claims |
+| 7 | `1ae94e3` | feat(tools): differential_diagnosis — LLM-powered ranked DDx |
+| 8 | `3b48523` | feat: clinical_handoff orchestrator + abbreviated citations + scenarios |
+| 9 | `01a1fe0` | feat: deterministic quality eval harness emitting docs/eval-results.md |
+| 10 | `ca29f32` | docs: refresh README + project-status + .env.example |
+| 11 | (this commit) | test+docs: agent test isolation + final morning handoff |
+
+### Verified one final time before stopping
+
+- `npm test --prefix mcp-server` → **209/209 across 13 suites** (~440ms).
+- `agent/venv/bin/pytest` → **69/69 across 4 suites** (~600ms).
+- `npm run eval --prefix mcp-server` → **8/8 tools pass section presence**; report regenerated in `docs/eval-results.md`.
+- `tsc --noEmit` clean (Vitest's vite-node compile clean).
+- `.env` exists locally (gitignored), populated with NOWBIND + OpenAI keys you provided plus the FHIR/agent defaults.
+
+### Still your call (intentionally untouched)
+
+1. **Track C — Public deploy** (Render or alternative). Both Dockerfiles already exist; `.env.production.example` template is in the multi-track plan. You explicitly reserved this.
+2. **Track D — Submission**: register in Prompt Opinion's External Agents UI, in-platform smoke, record <3min demo, submit on Devpost before 2026-05-11 23:00 ET.
+3. **`docs/promptopinion-submission.md`** — empty until D1 lands.
+
+### When you wake
+
+The loop is paused, not stopped. Send any direction — "ship X next", "polish Y", "stop" — and I'll continue or wind down cleanly.

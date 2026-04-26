@@ -49,7 +49,12 @@ class TestConfig:
         assert cfg.GOOGLE_API_KEY == ""
 
     def test_default_agent_public_url_empty(self, monkeypatch):
+        # The test asserts that, with no AGENT_PUBLIC_URL in env and no .env
+        # contributing one, the config defaults to "". Stub load_dotenv so a
+        # repo-root .env doesn't bleed in during the importlib.reload.
         monkeypatch.delenv("AGENT_PUBLIC_URL", raising=False)
+        # `load_dotenv` is re-imported on module reload, so patch the source.
+        monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: False)
         import importlib
         import medassist.config as cfg
         importlib.reload(cfg)
