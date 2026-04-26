@@ -1,0 +1,96 @@
+/*
+ * MedAssist design tokens.
+ * One serif. One sans. One mono. One accent. One surface at a time.
+ * Edit nothing here without revisiting the whole rebuild.
+ */
+
+:root {
+  /* ── Type families ───────────────────────────────────────────────── */
+  --font-serif: "Source Serif 4", "Source Serif Pro", Iowan Old Style,
+    Apple Garamond, Baskerville, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", monospace;
+
+  /* ── Type scale ──────────────────────────────────────────────────── */
+  /* Display only used once per view. */
+  --type-display: clamp(2.25rem, 1.6rem + 2.5vw, 3.5rem); /* 36–56 */
+  --type-display-leading: 1.05;
+
+  --type-h2: 1.5rem;       /* 24 */
+  --type-h2-leading: 1.25;
+
+  --type-section: 1.25rem; /* 20 */
+  --type-section-leading: 1.3;
+
+  --type-body: 1rem;       /* 16 */
+  --type-body-leading: 1.55;
+
+  --type-small: 0.8125rem; /* 13 */
+  --type-small-leading: 1.55;
+
+  --type-mono: 0.8125rem;
+  --type-mono-leading: 1.5;
+
+  --measure-prose: 70ch;
+
+  /* ── Color ───────────────────────────────────────────────────────── */
+  /* Deep ink + warm bone + a single accent. No extras. */
+  --ink-1000: #14110d;        /* near-black for deepest text */
+  --ink-900: #1a1814;         /* primary ink */
+  --ink-700: #3b362d;         /* secondary text */
+  --ink-500: #6e6657;         /* tertiary, captions */
+  --ink-300: #b6ad9b;         /* hairlines, muted */
+  --ink-200: #d8d1c0;         /* dividers */
+  --bone-100: #ebe5d6;        /* subtle surface tint */
+  --bone-50: #f4efe6;         /* page background */
+  --bone-0: #fbf8f1;          /* lifted surface */
+
+  --accent: #b23a48;          /* clinical crimson — used sparingly */
+  --accent-tint: rgba(178, 58, 72, 0.08);
+  --accent-strong: #8a2532;
+
+  --status-ok: #4f6b3c;       /* muted forest, only the dot */
+  --status-warn: #b8862f;     /* archive ochre, only the dot */
+  --status-down: var(--accent);
+
+  /* ── Spacing — single 4px scale ──────────────────────────────────── */
+  --space-1: 0.25rem;   /*  4 */
+  --space-2: 0.5rem;    /*  8 */
+  --space-3: 0.75rem;   /* 12 */
+  --space-4: 1rem;      /* 16 */
+  --space-5: 1.5rem;    /* 24 */
+  --space-6: 2rem;      /* 32 */
+  --space-7: 3rem;      /* 48 */
+  --space-8: 5rem;      /* 80 */
+  --space-9: 7.5rem;    /* 120 */
+
+  /* ── Layout ──────────────────────────────────────────────────────── */
+  --rail-width: 13rem;        /* 208px */
+  --header-height: 3.5rem;    /* 56px */
+  --gutter-desktop: var(--space-8);
+  --gutter-tablet: var(--space-5);
+
+  /* ── Motion ──────────────────────────────────────────────────────── */
+  --motion-fast: 80ms;        /* state changes */
+  --motion-base: 200ms;       /* hover, small reveals */
+  --motion-signature: 360ms;  /* result reveal — used once */
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+
+  /* ── Radii (used sparingly, never on the main surface) ───────────── */
+  --radius-1: 2px;
+  --radius-2: 4px;
+
+  /* ── Z-index ─────────────────────────────────────────────────────── */
+  --z-popover: 50;
+  --z-toast: 90;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-signature: 0ms;
+  }
+}

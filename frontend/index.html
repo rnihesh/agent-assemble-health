@@ -3,291 +3,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MedAssist | Healthcare Agent Command Center</title>
+  <title>MedAssist — Clinical Workbench</title>
+  <meta name="description" content="MedAssist clinical decision support workbench: six MCP tools for patient summary, drug safety, labs, risk scoring, care gaps, and guidelines.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="page-shell">
-    <div class="atmosphere atmosphere-a"></div>
-    <div class="atmosphere atmosphere-b"></div>
+  <div class="app">
 
-    <header class="hero panel">
-      <div class="hero-copy">
-        <p class="eyebrow">Agents Assemble Submission Console</p>
-        <h1>MedAssist</h1>
-        <p class="hero-lead">
-          A clinician-facing command center for interoperable decision support across
-          MCP, A2A, and FHIR.
-        </p>
-        <div class="hero-meta">
-          <span class="meta-pill">6 clinical tools</span>
-          <span class="meta-pill">4 specialist workflows</span>
-          <span class="meta-pill">SHARP-ready context handling</span>
-        </div>
+    <header class="app__header" role="banner">
+      <div class="brand">
+        <span class="brand__mark">MedAssist</span>
+        <span class="brand__sub">Clinical Workbench</span>
       </div>
 
-      <div class="hero-actions">
-        <div class="hero-health">
-          <span class="stack-label">Stack readiness</span>
-          <strong id="stack-overall">Checking</strong>
-          <span id="stack-note">Probing MCP, agent, and FHIR connectivity.</span>
+      <div class="header__right">
+        <div class="patient-input">
+          <label for="patient-id">Patient</label>
+          <input
+            type="text"
+            id="patient-id"
+            spellcheck="false"
+            autocomplete="off"
+            placeholder="FHIR ID"
+            aria-describedby="patient-hint"
+          />
         </div>
-        <div class="hero-action-row">
-          <button id="btn-refresh-status" class="btn btn-secondary">Refresh Stack</button>
-          <button id="btn-copy-latest" class="btn btn-ghost">Copy Latest Result</button>
+
+        <div class="scenarios" id="scenarios" aria-expanded="false">
+          <button
+            type="button"
+            class="scenario-link"
+            id="scenarios-toggle"
+            aria-haspopup="true"
+            aria-controls="scenarios-menu"
+          >Try a scenario</button>
+          <div class="scenarios__menu" id="scenarios-menu" role="menu" aria-labelledby="scenarios-toggle"></div>
         </div>
+
+        <button
+          type="button"
+          class="status"
+          id="status"
+          data-state="loading"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-controls="status-popover"
+        >
+          <span class="status__dot" aria-hidden="true"></span>
+          <span class="status__label" id="status-label">Checking</span>
+          <div class="status__popover" id="status-popover" role="dialog" aria-label="Service status detail">
+            <dl id="status-detail">
+              <div class="status__row">
+                <dt>MCP</dt>
+                <dd id="status-mcp">—</dd>
+              </div>
+              <div class="status__row">
+                <dt>Agent</dt>
+                <dd id="status-agent">—</dd>
+              </div>
+              <div class="status__row">
+                <dt>FHIR</dt>
+                <dd id="status-fhir">—</dd>
+              </div>
+              <div class="status__row">
+                <dt>Checked</dt>
+                <dd id="status-checked">—</dd>
+              </div>
+            </dl>
+          </div>
+        </button>
       </div>
     </header>
 
-    <section class="status-grid" aria-label="System status">
-      <article class="status-card panel" id="status-card-mcp" data-state="loading">
-        <div class="status-topline">
-          <p class="status-kicker">MCP</p>
-          <span class="status-badge" id="status-badge-mcp">Checking</span>
+    <div class="app__main">
+      <nav class="rail" aria-label="Clinical tools">
+        <p class="rail__heading">Tools</p>
+        <ul class="rail__list" id="tool-rail">
+          <li class="rail__item">
+            <button type="button" data-tool="patient-summary" aria-current="true">Patient Summary</button>
+          </li>
+          <li class="rail__item">
+            <button type="button" data-tool="drug-interactions">Drug Interactions</button>
+          </li>
+          <li class="rail__item">
+            <button type="button" data-tool="lab-results">Lab Results</button>
+          </li>
+          <li class="rail__item">
+            <button type="button" data-tool="risk-score">Risk Score</button>
+          </li>
+          <li class="rail__item">
+            <button type="button" data-tool="care-gaps">Care Gaps</button>
+          </li>
+          <li class="rail__item">
+            <button type="button" data-tool="clinical-guidelines">Clinical Guidelines</button>
+          </li>
+        </ul>
+      </nav>
+
+      <main class="surface" id="surface" role="main">
+        <div class="surface__inner">
+          <h1 class="surface__title" id="tool-title">Patient Summary</h1>
+          <p class="surface__lede" id="tool-lede"></p>
+
+          <!-- Configure mode -->
+          <section class="configure" id="configure" aria-labelledby="tool-title">
+            <div class="field" data-field="med-list" hidden>
+              <label for="med-list">Medications (one per line)</label>
+              <textarea id="med-list" rows="5" placeholder="warfarin&#10;ibuprofen&#10;sertraline"></textarea>
+              <p class="helper">Combines with the staged patient's active medications, if any.</p>
+            </div>
+
+            <div class="field" data-field="lookback-days" hidden>
+              <label for="lookback-days">Lookback window (days)</label>
+              <input type="number" id="lookback-days" value="90" min="1" max="730" />
+              <p class="helper">Longer windows surface trajectories more clearly.</p>
+            </div>
+
+            <div class="field" data-field="calculator" hidden>
+              <label for="calculator">Calculator</label>
+              <select id="calculator">
+                <option value="CHA2DS2-VASc">CHA2DS2-VASc — stroke risk in atrial fibrillation</option>
+                <option value="HEART">HEART — chest pain risk stratification</option>
+                <option value="Wells-DVT">Wells DVT — deep vein thrombosis</option>
+                <option value="Wells-PE">Wells PE — pulmonary embolism</option>
+                <option value="ASCVD">ASCVD — 10-year cardiovascular risk</option>
+                <option value="CKD-EPI">CKD-EPI — estimated glomerular filtration rate</option>
+              </select>
+              <p class="helper">Pick the scoring rubric you want to surface.</p>
+            </div>
+
+            <div class="field" data-field="condition" hidden>
+              <label for="condition">Condition</label>
+              <input type="text" id="condition" placeholder="diabetes, hypertension, COPD…" />
+              <p class="helper">Used when no patient is staged, or to scope guideline matching.</p>
+            </div>
+
+            <div class="actions">
+              <button type="button" class="btn btn--primary" id="run-btn">Run</button>
+              <button type="button" class="btn btn--ghost" id="reset-btn">Reset</button>
+            </div>
+          </section>
+
+          <!-- Idle state (initial copy) -->
+          <section class="state state--idle" id="state-idle">
+            <p class="state__copy" id="idle-copy">Press Run to begin.</p>
+          </section>
+
+          <!-- Running state -->
+          <section class="state state--running" id="state-running" hidden>
+            <h2 class="state__title">Working</h2>
+            <p class="state__copy" id="running-copy">Working</p>
+          </section>
+
+          <!-- Error state -->
+          <section class="state state--error" id="state-error" hidden>
+            <h2 class="state__title" id="error-title">Something went wrong</h2>
+            <p class="state__copy" id="error-copy"></p>
+            <div class="actions">
+              <button type="button" class="btn btn--quiet" id="retry-btn">Retry</button>
+            </div>
+          </section>
+
+          <!-- Result document -->
+          <section class="document" id="state-result" hidden>
+            <header class="document__caption">
+              <div class="document__caption-meta">
+                <span><strong id="result-tool"></strong></span>
+                <span id="result-patient"></span>
+                <span id="result-runtime"></span>
+                <span id="result-time"></span>
+              </div>
+            </header>
+            <article class="note" id="note" tabindex="-1"></article>
+            <footer class="document__footer">
+              <button type="button" class="btn btn--quiet" id="copy-btn">Copy as note</button>
+              <button type="button" class="btn btn--ghost" id="download-btn">Download .md</button>
+            </footer>
+          </section>
         </div>
-        <h2>Tool Server</h2>
-        <p class="status-copy" id="status-copy-mcp">Waiting for health response.</p>
-        <dl class="status-detail-list">
-          <div>
-            <dt>Sessions</dt>
-            <dd id="status-detail-mcp-sessions">-</dd>
-          </div>
-          <div>
-            <dt>Port</dt>
-            <dd id="status-detail-mcp-port">-</dd>
-          </div>
-        </dl>
-      </article>
-
-      <article class="status-card panel" id="status-card-agent" data-state="loading">
-        <div class="status-topline">
-          <p class="status-kicker">A2A</p>
-          <span class="status-badge" id="status-badge-agent">Checking</span>
-        </div>
-        <h2>Agent Runtime</h2>
-        <p class="status-copy" id="status-copy-agent">Waiting for health response.</p>
-        <dl class="status-detail-list">
-          <div>
-            <dt>Public URL</dt>
-            <dd id="status-detail-agent-url">-</dd>
-          </div>
-          <div>
-            <dt>Google Key</dt>
-            <dd id="status-detail-agent-key">-</dd>
-          </div>
-        </dl>
-      </article>
-
-      <article class="status-card panel" id="status-card-fhir" data-state="loading">
-        <div class="status-topline">
-          <p class="status-kicker">FHIR</p>
-          <span class="status-badge" id="status-badge-fhir">Checking</span>
-        </div>
-        <h2>Clinical Data Plane</h2>
-        <p class="status-copy" id="status-copy-fhir">Waiting for metadata response.</p>
-        <dl class="status-detail-list">
-          <div>
-            <dt>Version</dt>
-            <dd id="status-detail-fhir-version">-</dd>
-          </div>
-          <div>
-            <dt>Software</dt>
-            <dd id="status-detail-fhir-software">-</dd>
-          </div>
-        </dl>
-      </article>
-    </section>
-
-    <div class="workspace">
-      <aside class="control-column">
-        <section class="panel panel-soft patient-panel">
-          <div class="section-topline">
-            <h3>Patient Context</h3>
-            <span class="section-caption">Manual input or SHARP-aware demo staging</span>
-          </div>
-
-          <label class="field-label" for="patient-id">Patient ID</label>
-          <div class="input-row">
-            <input type="text" id="patient-id" placeholder="e.g. patient-001" />
-            <button id="btn-load" class="btn btn-primary">Stage</button>
-          </div>
-
-          <p class="helper-text" id="patient-context-note">
-            No patient staged yet. Guideline mode still works without a patient.
-          </p>
-          <div class="context-chip-row">
-            <span class="context-chip" id="patient-label">No patient loaded</span>
-            <span class="context-chip context-chip-muted">Prompt Opinion SHARP-ready</span>
-          </div>
-        </section>
-
-        <section class="panel scenario-panel">
-          <div class="section-topline">
-            <h3>Demo Runways</h3>
-            <span class="section-caption">One-click setup for strong judge walkthroughs</span>
-          </div>
-          <div class="scenario-grid" id="scenario-grid"></div>
-        </section>
-
-        <section class="panel tool-panel">
-          <div class="section-topline">
-            <h3>Clinical Tools</h3>
-            <span class="section-caption">Select a tool, then tune the request</span>
-          </div>
-          <nav class="tool-nav" id="tool-nav">
-            <button class="tool-btn active" data-tool="patient-summary">
-              <span class="tool-btn-title">Patient Summary</span>
-              <span class="tool-btn-copy">Longitudinal overview of problems, meds, labs, vitals, and immunizations.</span>
-            </button>
-            <button class="tool-btn" data-tool="drug-interactions">
-              <span class="tool-btn-title">Drug Interactions</span>
-              <span class="tool-btn-copy">Interaction matrix, allergy conflicts, and medication duplication review.</span>
-            </button>
-            <button class="tool-btn" data-tool="lab-results">
-              <span class="tool-btn-title">Lab Results</span>
-              <span class="tool-btn-copy">Flags trends, derived values, and clinically significant abnormalities.</span>
-            </button>
-            <button class="tool-btn" data-tool="risk-score">
-              <span class="tool-btn-title">Risk Scores</span>
-              <span class="tool-btn-copy">Validated calculators including CHA2DS2-VASc, HEART, ASCVD, and CKD-EPI.</span>
-            </button>
-            <button class="tool-btn" data-tool="care-gaps">
-              <span class="tool-btn-title">Care Gaps</span>
-              <span class="tool-btn-copy">Screenings, vaccines, and condition-specific monitoring gaps.</span>
-            </button>
-            <button class="tool-btn" data-tool="clinical-guidelines">
-              <span class="tool-btn-title">Clinical Guidelines</span>
-              <span class="tool-btn-copy">Condition-specific targets and action items, even without a patient record.</span>
-            </button>
-          </nav>
-        </section>
-
-        <section class="panel options-panel">
-          <div class="section-topline">
-            <h3>Run Configuration</h3>
-            <span class="section-caption" id="tool-subtitle">
-              Choose the active tool and shape the request for the current scenario.
-            </span>
-          </div>
-
-          <div class="tool-options is-hidden" id="options-patient-summary">
-            <p class="helper-text">Uses the staged patient to assemble a structured care snapshot.</p>
-          </div>
-
-          <div class="tool-options is-hidden" id="options-drug-interactions">
-            <label class="field-label" for="med-list">Additional Medications</label>
-            <textarea id="med-list" rows="4" placeholder="One per line, e.g.&#10;warfarin&#10;ibuprofen&#10;sertraline"></textarea>
-            <p class="helper-text">Works with staged patient meds, typed medications, or both.</p>
-          </div>
-
-          <div class="tool-options is-hidden" id="options-lab-results">
-            <label class="field-label" for="lookback-days">Lookback Window</label>
-            <input type="number" id="lookback-days" value="90" min="1" max="730" />
-            <p class="helper-text">Longer windows make worsening trajectories easier to demonstrate.</p>
-          </div>
-
-          <div class="tool-options is-hidden" id="options-risk-score">
-            <label class="field-label" for="calculator-select">Calculator</label>
-            <select id="calculator-select">
-              <option value="CHA2DS2-VASc">CHA2DS2-VASc (Stroke / AFib)</option>
-              <option value="HEART">HEART (Chest Pain)</option>
-              <option value="Wells-DVT">Wells DVT</option>
-              <option value="Wells-PE">Wells PE</option>
-              <option value="ASCVD">ASCVD 10-Year Risk</option>
-              <option value="CKD-EPI">CKD-EPI eGFR</option>
-            </select>
-            <p class="helper-text">Use this to make the scoring logic explicit during demos.</p>
-          </div>
-
-          <div class="tool-options is-hidden" id="options-care-gaps">
-            <p class="helper-text">Best shown with a patient who has sparse preventive history.</p>
-          </div>
-
-          <div class="tool-options is-hidden" id="options-clinical-guidelines">
-            <label class="field-label" for="condition-input">Condition</label>
-            <input type="text" id="condition-input" placeholder="e.g. diabetes, hypertension" />
-            <p class="helper-text">Useful as a fallback mode when live patient data is unavailable.</p>
-          </div>
-        </section>
-
-        <section class="panel preview-panel">
-          <div class="section-topline">
-            <h3>Invocation Preview</h3>
-            <span class="section-caption">Clear tool visibility before the request leaves the dashboard</span>
-          </div>
-          <div class="preview-grid">
-            <div class="preview-meta">
-              <span class="preview-label">Endpoint</span>
-              <code id="preview-endpoint">/api/patient-summary</code>
-            </div>
-            <div class="preview-meta">
-              <span class="preview-label">Requirements</span>
-              <span id="preview-requirement">Patient required</span>
-            </div>
-          </div>
-          <p class="helper-text" id="preview-note">
-            Stage a patient or switch to a guideline-only scenario to produce a ready request body.
-          </p>
-          <pre class="preview-body"><code id="preview-body">{}</code></pre>
-        </section>
-
-        <section class="panel action-panel">
-          <div class="section-topline">
-            <h3>Actions</h3>
-            <span class="section-caption">Run, export, and reset the current stage</span>
-          </div>
-          <div class="action-grid">
-            <button id="btn-run" class="btn btn-primary btn-large">Run Analysis</button>
-            <button id="btn-download" class="btn btn-secondary">Download Markdown</button>
-            <button id="btn-clear-result" class="btn btn-ghost">Clear Stage</button>
-          </div>
-        </section>
-      </aside>
-
-      <main class="result-column">
-        <section class="panel stage-panel">
-          <div class="stage-header">
-            <div>
-              <p class="eyebrow">Live Analysis</p>
-              <h2 id="tool-title">Patient Summary</h2>
-              <p class="stage-copy" id="stage-copy">
-                Ready for a structured clinical overview once a patient is staged.
-              </p>
-            </div>
-            <div class="stage-status">
-              <span class="status-indicator" id="status-indicator">Idle</span>
-              <span class="runtime-pill" id="runtime-indicator">No run yet</span>
-            </div>
-          </div>
-
-          <div class="result-summary" id="result-summary">
-            Stage a patient or choose a guideline-only scenario to begin.
-          </div>
-
-          <div class="results-container" id="results">
-            <div class="empty-state">
-              <p class="empty-title">Command center standing by</p>
-              <p class="empty-body">
-                Pick a demo runway, stage a patient, and run one of the six tools.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel history-panel">
-          <div class="section-topline">
-            <h3>Recent Analyses</h3>
-            <span class="section-caption" id="history-caption">0 saved locally</span>
-          </div>
-          <div class="history-list" id="history-list">
-            <div class="history-empty">No runs saved yet. Results will appear here after your first analysis.</div>
-          </div>
-        </section>
       </main>
     </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <section class="history" id="history" aria-label="Run history" aria-expanded="false">
+      <button type="button" class="history__toggle" id="history-toggle">
+        <span>History</span>
+        <span class="history__count" id="history-count">empty</span>
+      </button>
+      <ul class="history__list" id="history-list" role="list"></ul>
+    </section>
   </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
 </body>

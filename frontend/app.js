@@ -1,60 +1,62 @@
-/* MedAssist Healthcare Agent Command Center */
+/* MedAssist clinical workbench — state machine + REST client + markdown render. */
 
 (function () {
   "use strict";
 
   const API_BASE = window.location.origin;
-  const DRAFT_STORAGE_KEY = "medassist-dashboard-draft-v1";
-  const HISTORY_STORAGE_KEY = "medassist-dashboard-history-v2";
-  const HISTORY_LIMIT = 8;
+  const HISTORY_KEY = "medassist-workbench-history-v1";
+  const DRAFT_KEY = "medassist-workbench-draft-v1";
+  const HISTORY_LIMIT = 12;
+  const STATUS_INTERVAL_MS = 60000;
 
-  const TOOL_CONFIG = {
+  // ── Tool catalogue ────────────────────────────────────────────────────────
+
+  const TOOLS = {
     "patient-summary": {
       label: "Patient Summary",
-      description:
-        "Longitudinal overview of the current patient across demographics, problems, medications, labs, vitals, and immunizations.",
+      lede:
+        "A longitudinal overview of the staged patient: demographics, active problems, medications, recent labs, vitals, allergies, and immunizations.",
       endpoint: "/api/patient-summary",
       requiresPatient: true,
-      buildBody: function (ctx) {
+      fields: [],
+      loading: "Pulling the patient record from FHIR",
+      buildBody(ctx) {
         return { patientId: ctx.patientId };
       },
     },
     "drug-interactions": {
       label: "Drug Interactions",
-      description:
-        "High-signal medication safety analysis across current meds, typed additions, allergies, and duplication risk.",
+      lede:
+        "Reviews drug-drug interactions, drug-allergy conflicts, and duplicates across the staged patient's medications and any you add below.",
       endpoint: "/api/drug-interactions",
       requiresPatient: false,
-      buildBody: function (ctx) {
-        var medications = ctx.medList
+      fields: ["med-list"],
+      loading: "Checking RxNorm and OpenFDA for interactions",
+      buildBody(ctx) {
+        const meds = ctx.medList
           .split("\n")
-          .map(function (item) {
-            return item.trim();
-          })
+          .map((s) => s.trim())
           .filter(Boolean);
-
-        var body = {};
-        if (ctx.patientId) {
-          body.patientId = ctx.patientId;
-        }
-        if (medications.length > 0) {
-          body.medications = medications;
-        }
+        const body = {};
+        if (ctx.patientId) body.patientId = ctx.patientId;
+        if (meds.length) body.medications = meds;
         return body;
       },
-      validate: function (body) {
+      validate(body) {
         return Boolean(body.patientId || (body.medications && body.medications.length));
       },
       validationMessage:
-        "Provide a staged patient, typed medications, or both for interaction review.",
+        "Stage a patient or list at least one medication to review.",
     },
     "lab-results": {
       label: "Lab Results",
-      description:
-        "Abnormality detection, trend interpretation, and derived values such as eGFR across the lookback window.",
+      lede:
+        "Flags abnormal observations, calculates derived values like eGFR, and surfaces trends across the lookback window.",
       endpoint: "/api/lab-results",
       requiresPatient: true,
-      buildBody: function (ctx) {
+      fields: ["lookback-days"],
+      loading: "Fetching Observation entries from the past lookback window",
+      buildBody(ctx) {
         return {
           patientId: ctx.patientId,
           lookbackDays: parseInt(ctx.lookbackDays, 10) || 90,
@@ -62,1108 +64,979 @@
       },
     },
     "risk-score": {
-      label: "Risk Scores",
-      description:
-        "Validated bedside scoring for stroke, chest pain, thromboembolism, ASCVD, and kidney function.",
+      label: "Risk Score",
+      lede:
+        "Runs a validated bedside calculator against the staged patient and explains each contributing factor.",
       endpoint: "/api/risk-score",
       requiresPatient: true,
-      buildBody: function (ctx) {
-        return {
-          patientId: ctx.patientId,
-          calculator: ctx.calculator,
-        };
+      fields: ["calculator"],
+      loadingFor(ctx) {
+        return "Computing " + (ctx.calculator || "the selected score") + " from patient observations";
+      },
+      buildBody(ctx) {
+        return { patientId: ctx.patientId, calculator: ctx.calculator };
       },
     },
     "care-gaps": {
       label: "Care Gaps",
-      description:
-        "Preventive care, vaccination, and guideline-based follow-up gaps for the staged patient.",
+      lede:
+        "Compares the staged patient against USPSTF screenings, CDC immunization schedules, and condition-specific monitoring intervals.",
       endpoint: "/api/care-gaps",
       requiresPatient: true,
-      buildBody: function (ctx) {
+      fields: [],
+      loading: "Comparing the patient record against USPSTF and CDC schedules",
+      buildBody(ctx) {
         return { patientId: ctx.patientId };
       },
     },
     "clinical-guidelines": {
       label: "Clinical Guidelines",
-      description:
-        "Condition-specific standards of care and target-setting, with or without a live patient record.",
+      lede:
+        "Matches a condition or staged patient against ADA, ACC/AHA, GOLD, GINA, and KDIGO guideline targets.",
       endpoint: "/api/clinical-guidelines",
       requiresPatient: false,
-      buildBody: function (ctx) {
-        var body = {};
-        if (ctx.patientId) {
-          body.patientId = ctx.patientId;
-        }
-        if (ctx.condition) {
-          body.condition = ctx.condition;
-        }
+      fields: ["condition"],
+      loading: "Matching against ADA, ACC/AHA, GOLD, GINA, and KDIGO guidelines",
+      buildBody(ctx) {
+        const body = {};
+        if (ctx.patientId) body.patientId = ctx.patientId;
+        if (ctx.condition) body.condition = ctx.condition;
         return body;
       },
-      validate: function (body) {
+      validate(body) {
         return Boolean(body.patientId || body.condition);
       },
       validationMessage:
-        "Provide a staged patient or a condition name for guideline matching.",
+        "Stage a patient or enter a condition (for example, diabetes) to match guidelines.",
     },
   };
 
-  const DEMO_SCENARIOS = [
-    {
-      id: "elder-review",
-      title: "Complex Elder Review",
-      accent: "Full-story patient snapshot",
-      narrative:
-        "Stage your complex elderly patient, then lead with summary before pivoting into renal function, anticoagulation context, and care gaps.",
-      tool: "patient-summary",
-      patientHint:
-        "Use the loaded James Wilson equivalent from your FHIR environment for the strongest full-patient walkthrough.",
-      prefill: {},
-    },
+  // Two scenarios — strongest demos. Drop the original five.
+  const SCENARIOS = [
     {
       id: "polypharmacy",
-      title: "Polypharmacy Safety",
-      accent: "Judge-friendly instant risk",
-      narrative:
-        "Works even without FHIR data. Great backup path when you want fast, obvious clinical signal from interaction logic.",
+      title: "Polypharmacy interaction check",
+      desc: "Four-drug list, no patient required. Shows the interaction matrix in seconds.",
       tool: "drug-interactions",
-      patientHint:
-        "Optional patient context adds allergies and current meds, but typed medications alone still demo well.",
-      prefill: {
-        medList: "warfarin\nibuprofen\nsertraline\ntramadol",
-      },
+      patientId: "",
+      prefill: { medList: "warfarin\nibuprofen\nsertraline\ntramadol" },
     },
     {
-      id: "lab-trend",
-      title: "Diabetes Trendline",
-      accent: "Worsening labs over time",
-      narrative:
-        "Use a diabetes patient with serial HbA1c results to show trend awareness, albuminuria, and derived kidney metrics.",
-      tool: "lab-results",
-      patientHint:
-        "Best with the diabetic-not-at-goal patient or an equivalent live record with repeated labs.",
-      prefill: {
-        lookbackDays: 365,
-      },
-    },
-    {
-      id: "score-spotlight",
-      title: "Risk Spotlight",
-      accent: "Explicit clinical scoring",
-      narrative:
-        "Turn the logic into a judge-friendly moment by selecting the exact calculator you want to emphasize.",
-      tool: "risk-score",
-      patientHint:
-        "Use an AFib patient for CHA2DS2-VASc or a chest-pain patient for HEART scoring.",
-      prefill: {
-        calculator: "CHA2DS2-VASc",
-      },
-    },
-    {
-      id: "guideline-fallback",
-      title: "Guideline Fallback",
-      accent: "No patient required",
-      narrative:
-        "A resilient fallback when live data is missing: still shows meaningful clinical value and domain knowledge.",
+      id: "diabetes-guidelines",
+      title: "Diabetes guideline targets",
+      desc: "Pulls ADA and KDIGO targets without depending on FHIR connectivity.",
       tool: "clinical-guidelines",
-      patientHint:
-        "Patient optional. This is the safest mode when external FHIR access is unstable.",
-      prefill: {
-        condition: "diabetes",
-      },
+      patientId: "",
+      prefill: { condition: "diabetes" },
     },
   ];
 
-  var state = {
+  // ── State ─────────────────────────────────────────────────────────────────
+
+  const state = {
     activeTool: "patient-summary",
-    activeScenarioId: "",
-    lastResultMarkdown: "",
-    lastRunMeta: null,
+    mode: "idle",
+    lastResult: null,
+    lastError: null,
     history: loadHistory(),
-    statusRefreshInFlight: false,
-    patientHint: "",
+    statusOpen: false,
+    scenariosOpen: false,
+    historyOpen: false,
+    statusInFlight: false,
+    serviceStatus: null,
   };
 
-  var refs = {
-    patientIdInput: document.getElementById("patient-id"),
-    patientLabel: document.getElementById("patient-label"),
-    patientContextNote: document.getElementById("patient-context-note"),
-    btnLoad: document.getElementById("btn-load"),
-    btnRun: document.getElementById("btn-run"),
-    btnRefreshStatus: document.getElementById("btn-refresh-status"),
-    btnCopyLatest: document.getElementById("btn-copy-latest"),
-    btnDownload: document.getElementById("btn-download"),
-    btnClearResult: document.getElementById("btn-clear-result"),
-    toolButtons: document.querySelectorAll(".tool-btn"),
-    toolTitle: document.getElementById("tool-title"),
-    toolSubtitle: document.getElementById("tool-subtitle"),
-    stageCopy: document.getElementById("stage-copy"),
-    statusIndicator: document.getElementById("status-indicator"),
-    runtimeIndicator: document.getElementById("runtime-indicator"),
-    resultSummary: document.getElementById("result-summary"),
-    resultsContainer: document.getElementById("results"),
-    medListInput: document.getElementById("med-list"),
-    lookbackInput: document.getElementById("lookback-days"),
-    calculatorSelect: document.getElementById("calculator-select"),
-    conditionInput: document.getElementById("condition-input"),
-    previewEndpoint: document.getElementById("preview-endpoint"),
-    previewRequirement: document.getElementById("preview-requirement"),
-    previewNote: document.getElementById("preview-note"),
-    previewBody: document.getElementById("preview-body"),
-    scenarioGrid: document.getElementById("scenario-grid"),
-    historyList: document.getElementById("history-list"),
-    historyCaption: document.getElementById("history-caption"),
-    stackOverall: document.getElementById("stack-overall"),
-    stackNote: document.getElementById("stack-note"),
-    toast: document.getElementById("toast"),
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+
+  const $ = (id) => document.getElementById(id);
+  const refs = {
+    patientInput: $("patient-id"),
+    rail: $("tool-rail"),
+    title: $("tool-title"),
+    lede: $("tool-lede"),
+    configure: $("configure"),
+    fields: {
+      "med-list": document.querySelector('[data-field="med-list"]'),
+      "lookback-days": document.querySelector('[data-field="lookback-days"]'),
+      "calculator": document.querySelector('[data-field="calculator"]'),
+      "condition": document.querySelector('[data-field="condition"]'),
+    },
+    medList: $("med-list"),
+    lookback: $("lookback-days"),
+    calculator: $("calculator"),
+    condition: $("condition"),
+    runBtn: $("run-btn"),
+    resetBtn: $("reset-btn"),
+    retryBtn: $("retry-btn"),
+    stateIdle: $("state-idle"),
+    stateRunning: $("state-running"),
+    stateError: $("state-error"),
+    stateResult: $("state-result"),
+    idleCopy: $("idle-copy"),
+    runningCopy: $("running-copy"),
+    errorTitle: $("error-title"),
+    errorCopy: $("error-copy"),
+    note: $("note"),
+    resultTool: $("result-tool"),
+    resultPatient: $("result-patient"),
+    resultRuntime: $("result-runtime"),
+    resultTime: $("result-time"),
+    copyBtn: $("copy-btn"),
+    downloadBtn: $("download-btn"),
+    status: $("status"),
+    statusLabel: $("status-label"),
+    statusMcp: $("status-mcp"),
+    statusAgent: $("status-agent"),
+    statusFhir: $("status-fhir"),
+    statusChecked: $("status-checked"),
+    scenarios: $("scenarios"),
+    scenariosToggle: $("scenarios-toggle"),
+    scenariosMenu: $("scenarios-menu"),
+    history: $("history"),
+    historyToggle: $("history-toggle"),
+    historyList: $("history-list"),
+    historyCount: $("history-count"),
+    toast: $("toast"),
   };
 
-  restoreDraftState();
-  bindEvents();
-  renderScenarioCards();
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  restoreDraft();
+  renderScenarios();
   renderHistory();
-  activateTool(state.activeTool);
-  syncPatientContext();
-  if (state.lastResultMarkdown && state.lastRunMeta) {
-    showResult(state.lastResultMarkdown, state.lastRunMeta, { skipHistory: true });
-  }
-  updateInvocationPreview();
-  refreshSystemStatus();
-  window.setInterval(refreshSystemStatus, 60000);
+  bind();
+  selectTool(state.activeTool, { quiet: true });
+  refreshStatus();
+  window.setInterval(refreshStatus, STATUS_INTERVAL_MS);
 
-  function bindEvents() {
-    refs.toolButtons.forEach(function (button) {
-      button.addEventListener("click", function () {
-        state.activeScenarioId = "";
-        activateTool(button.dataset.tool);
-        renderScenarioCards();
-      });
+  // ── Bind events ───────────────────────────────────────────────────────────
+
+  function bind() {
+    refs.rail.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-tool]");
+      if (!btn) return;
+      selectTool(btn.dataset.tool);
     });
 
-    refs.btnLoad.addEventListener("click", function () {
-      syncPatientContext(true);
+    refs.runBtn.addEventListener("click", run);
+    refs.resetBtn.addEventListener("click", resetTool);
+    refs.retryBtn.addEventListener("click", run);
+
+    refs.patientInput.addEventListener("input", saveDraft);
+    refs.medList.addEventListener("input", saveDraft);
+    refs.lookback.addEventListener("input", saveDraft);
+    refs.calculator.addEventListener("change", saveDraft);
+    refs.condition.addEventListener("input", saveDraft);
+
+    refs.copyBtn.addEventListener("click", copyResult);
+    refs.downloadBtn.addEventListener("click", downloadResult);
+
+    refs.status.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (state.scenariosOpen) closeScenarios();
+      toggleStatus();
     });
 
-    refs.patientIdInput.addEventListener("keydown", function (event) {
-      if (event.key === "Enter") {
-        refs.btnLoad.click();
-      }
+    refs.scenariosToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (state.statusOpen) closeStatus();
+      toggleScenarios();
+    });
+    refs.scenariosMenu.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-scenario]");
+      if (!btn) return;
+      applyScenario(btn.dataset.scenario);
     });
 
-    refs.patientIdInput.addEventListener("input", function () {
-      updateInvocationPreview();
-      saveDraftState();
+    refs.historyToggle.addEventListener("click", toggleHistory);
+    refs.historyList.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-history-id]");
+      if (!btn) return;
+      const id = btn.dataset.historyId;
+      const action = btn.dataset.action;
+      if (action === "open") openHistory(id);
+      else if (action === "rerun") rerunHistory(id);
     });
 
-    refs.medListInput.addEventListener("input", function () {
-      updateInvocationPreview();
-      saveDraftState();
+    document.addEventListener("click", (e) => {
+      if (state.statusOpen && !refs.status.contains(e.target)) closeStatus();
+      if (state.scenariosOpen && !refs.scenarios.contains(e.target)) closeScenarios();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (state.statusOpen) closeStatus();
+      if (state.scenariosOpen) closeScenarios();
     });
 
-    refs.lookbackInput.addEventListener("input", function () {
-      updateInvocationPreview();
-      saveDraftState();
-    });
-
-    refs.calculatorSelect.addEventListener("change", function () {
-      updateInvocationPreview();
-      saveDraftState();
-    });
-
-    refs.conditionInput.addEventListener("input", function () {
-      updateInvocationPreview();
-      saveDraftState();
-    });
-
-    refs.btnRun.addEventListener("click", function () {
-      runTool();
-    });
-
-    refs.btnRefreshStatus.addEventListener("click", function () {
-      refreshSystemStatus(true);
-    });
-
-    refs.btnCopyLatest.addEventListener("click", function () {
-      copyLatestResult();
-    });
-
-    refs.btnDownload.addEventListener("click", function () {
-      downloadLatestResult();
-    });
-
-    refs.btnClearResult.addEventListener("click", function () {
-      clearStage(true);
-    });
-
-    refs.scenarioGrid.addEventListener("click", function (event) {
-      var target = event.target;
-      if (!(target instanceof HTMLElement)) {
-        return;
-      }
-      var button = target.closest("[data-scenario-id]");
-      if (!button) {
-        return;
-      }
-      stageScenario(button.dataset.scenarioId);
-    });
-
-    refs.historyList.addEventListener("click", function (event) {
-      var target = event.target;
-      if (!(target instanceof HTMLElement)) {
-        return;
-      }
-
-      var actionButton = target.closest("[data-history-id]");
-      if (!actionButton) {
-        return;
-      }
-
-      var historyId = actionButton.dataset.historyId;
-      var action = actionButton.dataset.historyAction;
-      if (!historyId || !action) {
-        return;
-      }
-
-      if (action === "restore") {
-        restoreHistory(historyId);
-      } else if (action === "rerun") {
-        rerunHistory(historyId);
-      }
+    refs.patientInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") run();
     });
   }
 
-  function activateTool(toolId) {
-    if (!TOOL_CONFIG[toolId]) {
-      return;
-    }
+  // ── Tool selection ────────────────────────────────────────────────────────
 
+  function selectTool(toolId, opts = {}) {
+    const tool = TOOLS[toolId];
+    if (!tool) return;
     state.activeTool = toolId;
 
-    refs.toolButtons.forEach(function (button) {
-      button.classList.toggle("active", button.dataset.tool === toolId);
+    Array.from(refs.rail.querySelectorAll("button[data-tool]")).forEach((btn) => {
+      const isActive = btn.dataset.tool === toolId;
+      if (isActive) btn.setAttribute("aria-current", "true");
+      else btn.removeAttribute("aria-current");
     });
 
-    Object.keys(TOOL_CONFIG).forEach(function (knownToolId) {
-      var panel = document.getElementById("options-" + knownToolId);
-      if (!panel) {
-        return;
-      }
-      panel.classList.toggle("is-hidden", knownToolId !== toolId);
+    refs.title.textContent = tool.label;
+    refs.lede.textContent = tool.lede;
+
+    Object.entries(refs.fields).forEach(([name, el]) => {
+      if (!el) return;
+      el.hidden = !tool.fields.includes(name);
     });
 
-    var config = TOOL_CONFIG[toolId];
-    refs.toolTitle.textContent = config.label;
-    refs.toolSubtitle.textContent = config.description;
-    refs.stageCopy.textContent = config.description;
-    updateInvocationPreview();
-    saveDraftState();
+    state.lastResult = null;
+    state.lastError = null;
+    setMode("idle");
+    refs.idleCopy.textContent = idleCopyFor(tool);
+
+    if (!opts.quiet) saveDraft();
   }
 
-  function syncPatientContext(showToastOnLoad) {
-    var patientId = refs.patientIdInput.value.trim();
+  function idleCopyFor(tool) {
+    if (tool.requiresPatient) {
+      return "Stage a patient ID, then press Run to begin.";
+    }
+    if (tool.fields.length) {
+      return "Fill in the fields above, then press Run to begin.";
+    }
+    return "Press Run to begin.";
+  }
 
-    if (patientId) {
-      refs.patientLabel.textContent = "Patient: " + patientId;
-      refs.patientContextNote.textContent = state.patientHint
-        ? state.patientHint
-        : "Patient is staged locally for dashboard requests. MCP invocations can also infer patient context from SHARP launch metadata.";
+  function resetTool() {
+    refs.medList.value = "";
+    refs.lookback.value = 90;
+    refs.calculator.value = "CHA2DS2-VASc";
+    refs.condition.value = "";
+    state.lastResult = null;
+    state.lastError = null;
+    setMode("idle");
+    saveDraft();
+  }
 
-      if (showToastOnLoad) {
-        showToast("Patient staged for the next analysis.");
-      }
-      updateInvocationPreview();
-      saveDraftState();
+  // ── Modes ─────────────────────────────────────────────────────────────────
+
+  function setMode(mode) {
+    state.mode = mode;
+    refs.stateIdle.hidden = mode !== "idle";
+    refs.stateRunning.hidden = mode !== "running";
+    refs.stateError.hidden = mode !== "error";
+    refs.stateResult.hidden = mode !== "result";
+  }
+
+  // ── Run ───────────────────────────────────────────────────────────────────
+
+  async function run() {
+    const tool = TOOLS[state.activeTool];
+    const ctx = readContext();
+
+    if (tool.requiresPatient && !ctx.patientId) {
+      showError(
+        "Couldn't run " + tool.label,
+        "This tool needs a patient ID. Enter one in the header or pick a scenario."
+      );
       return;
     }
 
-    refs.patientLabel.textContent = "No patient loaded";
-    refs.patientContextNote.textContent = state.patientHint
-      ? state.patientHint
-      : "No patient staged yet. Guideline mode still works without a patient.";
-    updateInvocationPreview();
-    saveDraftState();
-  }
-
-  function stageScenario(scenarioId) {
-    var scenario = DEMO_SCENARIOS.find(function (item) {
-      return item.id === scenarioId;
-    });
-
-    if (!scenario) {
+    const body = tool.buildBody(ctx);
+    if (tool.validate && !tool.validate(body)) {
+      showError("Couldn't run " + tool.label, tool.validationMessage);
       return;
     }
 
-    activateTool(scenario.tool);
-    state.activeScenarioId = scenario.id;
-    state.patientHint = scenario.patientHint;
-
-    if (scenario.prefill.medList !== undefined) {
-      refs.medListInput.value = scenario.prefill.medList;
-    }
-    if (scenario.prefill.lookbackDays !== undefined) {
-      refs.lookbackInput.value = String(scenario.prefill.lookbackDays);
-    }
-    if (scenario.prefill.calculator !== undefined) {
-      refs.calculatorSelect.value = scenario.prefill.calculator;
-    }
-    if (scenario.prefill.condition !== undefined) {
-      refs.conditionInput.value = scenario.prefill.condition;
-    }
-
-    refs.resultSummary.textContent = scenario.narrative;
-    renderScenarioCards();
-    syncPatientContext();
-    updateInvocationPreview();
-    saveDraftState();
-    showToast("Scenario staged: " + scenario.title);
-  }
-
-  function buildRequestContext() {
-    return {
-      patientId: refs.patientIdInput.value.trim(),
-      medList: refs.medListInput.value.trim(),
-      lookbackDays: refs.lookbackInput.value,
-      calculator: refs.calculatorSelect.value,
-      condition: refs.conditionInput.value.trim(),
-    };
-  }
-
-  async function runTool() {
-    var config = TOOL_CONFIG[state.activeTool];
-    var requestContext = buildRequestContext();
-
-    if (config.requiresPatient && !requestContext.patientId) {
-      showError("Patient ID is required for " + config.label + ".");
-      return;
-    }
-
-    var body = config.buildBody(requestContext);
-    if (config.validate && !config.validate(body)) {
-      showError(config.validationMessage || "The current configuration is incomplete.");
-      return;
-    }
-
-    showLoading(config.label, body.patientId || requestContext.patientId);
-    var startedAt = window.performance.now();
+    const loadingCopy =
+      typeof tool.loadingFor === "function"
+        ? tool.loadingFor(ctx)
+        : tool.loading;
+    refs.runningCopy.textContent = loadingCopy;
+    setMode("running");
+    refs.runBtn.disabled = true;
+    const startedAt = performance.now();
 
     try {
-      var response = await fetch(API_BASE + config.endpoint, {
+      const response = await fetch(API_BASE + tool.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      var data = await response.json().catch(function () {
-        return {};
-      });
+      const data = await response.json().catch(() => ({}));
 
-      if (!response.ok || data.error) {
-        showError(data.error || "Unexpected response from server.");
+      // Treat "patient not known/found" as an empty-state, not a server error.
+      const notFoundLike =
+        response.status === 404 ||
+        /\b(not\s*found|not\s*known|no\s*such|does\s*not\s*exist)\b/i.test(
+          data.error || ""
+        );
+      if (notFoundLike && ctx.patientId) {
+        showError(
+          "No patient with that ID",
+          "FHIR couldn't find patient " + ctx.patientId + ". Check the ID, or try one from the scenarios."
+        );
+        return;
+      }
+
+      if (!response.ok) {
+        const isServer = response.status >= 500;
+        showError(
+          "Couldn't run " + tool.label,
+          isServer
+            ? "The MCP server returned " + response.status + ". Check the status indicator or retry."
+            : data.error || "Request rejected (" + response.status + ")."
+        );
+        return;
+      }
+
+      if (data.error) {
+        showError("Couldn't run " + tool.label, data.error);
         return;
       }
 
       if (!data.result) {
-        showError("The server response did not include a result payload.");
+        showError(
+          "Couldn't run " + tool.label,
+          "The server response was empty. Retry, or check the status indicator."
+        );
         return;
       }
 
-      var runtimeMs = Math.round(window.performance.now() - startedAt);
-      showResult(data.result, {
+      const runtimeMs = Math.round(performance.now() - startedAt);
+      const completedAt = new Date().toISOString();
+      const meta = {
         toolId: state.activeTool,
-        toolLabel: config.label,
-        patientId: body.patientId || requestContext.patientId || "",
-        body: body,
-        runtimeMs: runtimeMs,
-        completedAt: new Date().toISOString(),
+        toolLabel: tool.label,
+        patientId: body.patientId || ctx.patientId || "",
+        body,
+        runtimeMs,
+        completedAt,
+      };
+      state.lastResult = { markdown: data.result, meta };
+      renderResult(data.result, meta);
+      persistHistory({
+        id: completedAt + ":" + state.activeTool,
+        ...meta,
+        markdown: data.result,
       });
-    } catch (error) {
-      showError("Connection failed: " + (error instanceof Error ? error.message : String(error)));
-    }
-  }
-
-  async function refreshSystemStatus(showToastOnSuccess) {
-    if (state.statusRefreshInFlight) {
-      return;
-    }
-
-    state.statusRefreshInFlight = true;
-    refs.btnRefreshStatus.disabled = true;
-    refs.stackOverall.textContent = "Checking";
-    refs.stackNote.textContent = "Refreshing stack readiness.";
-
-    try {
-      var response = await fetch(API_BASE + "/api/system-status");
-      var payload = await response.json();
-      updateSystemStatus(payload);
-      if (showToastOnSuccess) {
-        showToast("System status refreshed.");
-      }
-    } catch (error) {
-      applyStatusState("mcp", "unreachable", "Status endpoint unavailable.", "-", "-");
-      applyStatusState("agent", "unreachable", "Status endpoint unavailable.", "-", "-");
-      applyStatusState("fhir", "unreachable", "Status endpoint unavailable.", "-", "-");
-      refs.stackOverall.textContent = "Offline";
-      refs.stackNote.textContent = error instanceof Error ? error.message : String(error);
+    } catch (err) {
+      const offline = !navigator.onLine;
+      showError(
+        "Couldn't run " + tool.label,
+        offline
+          ? "Your browser is offline. Reconnect, then retry."
+          : "The MCP server didn't respond. Check the status indicator or retry."
+      );
     } finally {
-      state.statusRefreshInFlight = false;
-      refs.btnRefreshStatus.disabled = false;
+      refs.runBtn.disabled = false;
     }
   }
 
-  function updateSystemStatus(payload) {
-    var services = payload.services || {};
-    var mcp = services.mcp || {};
-    var agent = services.agent || {};
-    var fhir = services.fhir || {};
+  function readContext() {
+    return {
+      patientId: refs.patientInput.value.trim(),
+      medList: refs.medList.value,
+      lookbackDays: refs.lookback.value,
+      calculator: refs.calculator.value,
+      condition: refs.condition.value.trim(),
+    };
+  }
 
-    applyStatusState(
-      "mcp",
-      normalizeStatus(mcp.status),
-      mcp.status === "ok"
-        ? "Tool server online and ready to accept dashboard and MCP traffic."
-        : "Tool server health degraded.",
-      mcp.activeSessions !== undefined ? String(mcp.activeSessions) : "-",
-      mcp.port !== undefined ? String(mcp.port) : "-"
+  // ── Result / error views ──────────────────────────────────────────────────
+
+  function renderResult(markdown, meta) {
+    // Markdown renderer escapes all interpolated values (escHtml/escAttr).
+    refs.note.innerHTML = renderMarkdown(markdown);
+    refs.resultTool.textContent = meta.toolLabel;
+    refs.resultPatient.textContent = meta.patientId
+      ? "Patient " + meta.patientId
+      : "No patient";
+    refs.resultRuntime.textContent = meta.runtimeMs + " ms";
+    refs.resultTime.textContent = formatTime(meta.completedAt);
+    setMode("result");
+    try {
+      refs.note.focus({ preventScroll: true });
+    } catch (_) {}
+  }
+
+  function showError(title, copy) {
+    state.lastError = { title, copy };
+    refs.errorTitle.textContent = title;
+    refs.errorCopy.textContent = copy;
+    setMode("error");
+  }
+
+  // ── Status indicator ──────────────────────────────────────────────────────
+
+  async function refreshStatus() {
+    if (state.statusInFlight) return;
+    state.statusInFlight = true;
+    try {
+      const response = await fetch(API_BASE + "/api/system-status");
+      const data = await response.json().catch(() => ({}));
+      applyStatus(data);
+    } catch (_) {
+      applyStatus(null);
+    } finally {
+      state.statusInFlight = false;
+    }
+  }
+
+  function applyStatus(payload) {
+    state.serviceStatus = payload;
+    const services = (payload && payload.services) || {};
+    const mcp = services.mcp || {};
+    const agent = services.agent || {};
+    const fhir = services.fhir || {};
+
+    let overall = "down";
+    let label = "Down";
+    if (!payload) {
+      overall = "down";
+      label = "Down";
+    } else if (payload.status === "ok") {
+      overall = "ok";
+      label = "Live";
+    } else {
+      overall = "degraded";
+      label = "Degraded";
+    }
+
+    refs.status.dataset.state = overall;
+    refs.statusLabel.textContent = label;
+
+    refs.statusMcp.textContent = describeService(
+      mcp,
+      "port " + (mcp.port || "?") + " · " + (mcp.activeSessions != null ? mcp.activeSessions : 0) + " sessions"
     );
-
-    applyStatusState(
-      "agent",
-      normalizeStatus(agent.status),
-      agent.status === "ok"
-        ? "A2A agent is reachable and reporting healthy upstream MCP connectivity."
-        : readStatusMessage(agent),
-      safeAgentDetail(agent, "publicUrl"),
-      safeAgentDetail(agent, "googleApiKeyConfigured")
+    refs.statusAgent.textContent = describeService(
+      agent,
+      agent.healthUrl || "—"
     );
-
-    applyStatusState(
-      "fhir",
-      normalizeStatus(fhir.status),
-      fhir.status === "ok"
-        ? "FHIR metadata endpoint responded successfully."
-        : readStatusMessage(fhir),
-      fhir.fhirVersion || "-",
-      fhir.software || "-"
+    refs.statusFhir.textContent = describeService(
+      fhir,
+      fhir.fhirVersion ? (fhir.software || "FHIR") + " " + fhir.fhirVersion : (fhir.metadataUrl || "—")
     );
-
-    refs.stackOverall.textContent = payload.status === "ok" ? "Ready" : "Attention Needed";
-    refs.stackNote.textContent =
-      payload.status === "ok"
-        ? "All three planes are reachable from the dashboard."
-        : "One or more services need attention before the strongest live demo.";
+    refs.statusChecked.textContent = payload && payload.checkedAt ? formatTime(payload.checkedAt) : "—";
   }
 
-  function updateInvocationPreview() {
-    var config = TOOL_CONFIG[state.activeTool];
-    var requestContext = buildRequestContext();
-    var body = config.buildBody(requestContext);
-    var isReady =
-      (!config.requiresPatient || Boolean(requestContext.patientId)) &&
-      (!config.validate || config.validate(body));
-
-    refs.previewEndpoint.textContent = config.endpoint;
-    refs.previewRequirement.textContent = config.requiresPatient
-      ? requestContext.patientId
-        ? "Patient staged"
-        : "Patient required"
-      : requestContext.patientId
-        ? "Patient optional, staged"
-        : "Patient optional";
-    refs.previewBody.textContent = JSON.stringify(body, null, 2);
-
-    if (!isReady) {
-      refs.previewNote.textContent =
-        config.validationMessage ||
-        "This request is not runnable yet. Complete the required inputs first.";
-      return;
-    }
-
-    refs.previewNote.textContent = requestContext.patientId
-      ? "Request is ready. Prompt Opinion can also supply patient context via SHARP metadata during launch."
-      : "Request is ready without a patient. This is the safest fallback path when live FHIR data is unavailable.";
+  function describeService(svc, detail) {
+    const status = (svc && svc.status) || "unknown";
+    const word =
+      status === "ok"
+        ? "ok"
+        : status === "unhealthy" || status === "degraded"
+          ? "degraded"
+          : "down";
+    return word + " · " + (detail || "—");
   }
 
-  function applyStatusState(cardId, stateName, copy, detailA, detailB) {
-    var card = document.getElementById("status-card-" + cardId);
-    var badge = document.getElementById("status-badge-" + cardId);
-    var copyElement = document.getElementById("status-copy-" + cardId);
-    if (!card || !badge || !copyElement) {
-      return;
-    }
-
-    card.dataset.state = stateName;
-    badge.textContent = prettifyStatus(stateName);
-    copyElement.textContent = copy;
-
-    if (cardId === "mcp") {
-      document.getElementById("status-detail-mcp-sessions").textContent = detailA;
-      document.getElementById("status-detail-mcp-port").textContent = detailB;
-    } else if (cardId === "agent") {
-      document.getElementById("status-detail-agent-url").textContent = detailA;
-      document.getElementById("status-detail-agent-key").textContent = detailB;
-    } else if (cardId === "fhir") {
-      document.getElementById("status-detail-fhir-version").textContent = detailA;
-      document.getElementById("status-detail-fhir-software").textContent = detailB;
-    }
+  function toggleStatus() {
+    state.statusOpen = !state.statusOpen;
+    refs.status.setAttribute("aria-expanded", String(state.statusOpen));
   }
 
-  function normalizeStatus(value) {
-    if (value === "ok" || value === "healthy") {
-      return "ok";
-    }
-    if (value === "degraded" || value === "unhealthy") {
-      return "degraded";
-    }
-    if (value === "unreachable") {
-      return "unreachable";
-    }
-    return value || "loading";
+  function closeStatus() {
+    state.statusOpen = false;
+    refs.status.setAttribute("aria-expanded", "false");
   }
 
-  function prettifyStatus(status) {
-    switch (status) {
-      case "ok":
-        return "Online";
-      case "degraded":
-        return "Degraded";
-      case "unreachable":
-        return "Offline";
-      case "loading":
-        return "Checking";
-      default:
-        return status;
-    }
+  // ── Scenarios ─────────────────────────────────────────────────────────────
+
+  function renderScenarios() {
+    // Build via DOM nodes so we never inject untrusted strings.
+    refs.scenariosMenu.replaceChildren();
+    SCENARIOS.forEach((s) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "scenarios__item";
+      btn.dataset.scenario = s.id;
+      btn.setAttribute("role", "menuitem");
+      const title = document.createElement("span");
+      title.className = "scenarios__item-title";
+      title.textContent = s.title;
+      const desc = document.createElement("span");
+      desc.className = "scenarios__item-desc";
+      desc.textContent = s.desc;
+      btn.append(title, desc);
+      refs.scenariosMenu.append(btn);
+    });
   }
 
-  function safeAgentDetail(agent, field) {
-    if (!agent || !agent.details) {
-      return "-";
-    }
-
-    if (field === "publicUrl") {
-      return agent.details.publicUrl || "-";
-    }
-
-    if (field === "googleApiKeyConfigured") {
-      return agent.details.googleApiKeyConfigured ? "Configured" : "Missing";
-    }
-
-    return "-";
+  function toggleScenarios() {
+    state.scenariosOpen = !state.scenariosOpen;
+    refs.scenarios.setAttribute("aria-expanded", String(state.scenariosOpen));
   }
 
-  function readStatusMessage(statusPayload) {
-    if (!statusPayload) {
-      return "No status information available.";
-    }
-    if (statusPayload.error) {
-      return statusPayload.error;
-    }
-    if (statusPayload.details && statusPayload.details.status) {
-      return "Returned status: " + statusPayload.details.status;
-    }
-    if (statusPayload.statusCode) {
-      return "HTTP " + statusPayload.statusCode;
-    }
-    return "Service not ready.";
+  function closeScenarios() {
+    state.scenariosOpen = false;
+    refs.scenarios.setAttribute("aria-expanded", "false");
   }
 
-  function showLoading(label, patientId) {
-    refs.statusIndicator.textContent = "Running";
-    refs.statusIndicator.dataset.state = "loading";
-    refs.runtimeIndicator.textContent = "Collecting evidence";
-    refs.resultSummary.textContent =
-      (patientId ? "Patient " + patientId + " staged. " : "") +
-      "Running " + label + " against the current configuration.";
-    refs.btnRun.disabled = true;
-    refs.resultsContainer.innerHTML =
-      '<div class="loading-state">' +
-      '<div class="loading-orb"></div>' +
-      '<div>' +
-      '<p class="loading-title">Interpreting clinical context</p>' +
-      '<p class="loading-copy">MedAssist is assembling the response.</p>' +
-      "</div>" +
-      "</div>";
+  function applyScenario(id) {
+    const scenario = SCENARIOS.find((s) => s.id === id);
+    if (!scenario) return;
+    selectTool(scenario.tool, { quiet: true });
+    refs.patientInput.value = scenario.patientId || "";
+    if (scenario.prefill && scenario.prefill.medList !== undefined)
+      refs.medList.value = scenario.prefill.medList;
+    if (scenario.prefill && scenario.prefill.lookbackDays !== undefined)
+      refs.lookback.value = scenario.prefill.lookbackDays;
+    if (scenario.prefill && scenario.prefill.calculator !== undefined)
+      refs.calculator.value = scenario.prefill.calculator;
+    if (scenario.prefill && scenario.prefill.condition !== undefined)
+      refs.condition.value = scenario.prefill.condition;
+    closeScenarios();
+    saveDraft();
+    toast("Scenario loaded — " + scenario.title);
   }
 
-  function showResult(markdown, meta, options) {
-    options = options || {};
-    state.lastResultMarkdown = markdown;
-    state.lastRunMeta = meta;
-
-    refs.statusIndicator.textContent = "Ready";
-    refs.statusIndicator.dataset.state = "success";
-    refs.runtimeIndicator.textContent = meta.runtimeMs + " ms";
-    refs.resultSummary.textContent =
-      meta.toolLabel +
-      " completed" +
-      (meta.patientId ? " for " + meta.patientId : "") +
-      ". " +
-      summarizeMarkdown(markdown);
-    refs.btnRun.disabled = false;
-    refs.resultsContainer.innerHTML =
-      '<div class="markdown-body">' + renderMarkdown(markdown) + "</div>";
-    saveDraftState();
-
-    if (!options.skipHistory) {
-      persistHistoryEntry({
-        id: meta.completedAt + "-" + meta.toolId,
-        toolId: meta.toolId,
-        toolLabel: meta.toolLabel,
-        patientId: meta.patientId,
-        runtimeMs: meta.runtimeMs,
-        completedAt: meta.completedAt,
-        markdown: markdown,
-        body: meta.body,
-        summary: summarizeMarkdown(markdown),
-      });
-    }
-  }
-
-  function showError(message) {
-    refs.statusIndicator.textContent = "Error";
-    refs.statusIndicator.dataset.state = "error";
-    refs.runtimeIndicator.textContent = "Run halted";
-    refs.resultSummary.textContent = "The requested analysis did not complete.";
-    refs.btnRun.disabled = false;
-    refs.resultsContainer.innerHTML =
-      '<div class="error-box">' +
-      '<p class="error-title">Analysis halted</p>' +
-      '<p class="error-message">' + escapeHtml(message) + "</p>" +
-      "</div>";
-    saveDraftState();
-  }
-
-  function clearStage(showToastOnClear) {
-    state.lastResultMarkdown = "";
-    state.lastRunMeta = null;
-    refs.statusIndicator.textContent = "Idle";
-    refs.statusIndicator.dataset.state = "idle";
-    refs.runtimeIndicator.textContent = "No run yet";
-    refs.resultSummary.textContent = "Stage a patient or choose a guideline-only scenario to begin.";
-    refs.resultsContainer.innerHTML =
-      '<div class="empty-state">' +
-      '<p class="empty-title">Command center standing by</p>' +
-      '<p class="empty-body">Pick a demo runway, stage a patient, and run one of the six tools.</p>' +
-      "</div>";
-    saveDraftState();
-
-    if (showToastOnClear) {
-      showToast("Stage cleared.");
-    }
-  }
-
-  function persistHistoryEntry(entry) {
-    state.history = [entry]
-      .concat(
-        state.history.filter(function (item) {
-          return item.id !== entry.id;
-        })
-      )
-      .slice(0, HISTORY_LIMIT);
-
-    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(state.history));
-    renderHistory();
-  }
+  // ── History ───────────────────────────────────────────────────────────────
 
   function loadHistory() {
     try {
-      var raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (_error) {
+      return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    } catch (_) {
       return [];
     }
   }
 
+  function persistHistory(entry) {
+    state.history = [entry]
+      .concat(state.history.filter((h) => h.id !== entry.id))
+      .slice(0, HISTORY_LIMIT);
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
+    } catch (_) {}
+    renderHistory();
+  }
+
   function renderHistory() {
-    refs.historyCaption.textContent = state.history.length + " saved locally";
-
+    refs.historyCount.textContent = state.history.length
+      ? state.history.length + " saved"
+      : "empty";
+    refs.historyList.replaceChildren();
     if (!state.history.length) {
-      refs.historyList.innerHTML =
-        '<div class="history-empty">No runs saved yet. Results will appear here after your first analysis.</div>';
+      const empty = document.createElement("li");
+      empty.className = "history__empty";
+      empty.textContent = "No runs yet. Try a scenario from the header to load one.";
+      refs.historyList.append(empty);
       return;
     }
+    state.history.forEach((h) => {
+      const li = document.createElement("li");
+      li.className = "history__item";
 
-    refs.historyList.innerHTML = state.history
-      .map(function (entry) {
-        return (
-          '<article class="history-item">' +
-          '<div class="history-item-topline">' +
-          '<span class="history-tool">' + escapeHtml(entry.toolLabel) + "</span>" +
-          '<span class="history-time">' + escapeHtml(formatTimestamp(entry.completedAt)) + "</span>" +
-          "</div>" +
-          '<p class="history-summary">' + escapeHtml(entry.summary) + "</p>" +
-          '<div class="history-meta">' +
-          '<span>' + escapeHtml(entry.patientId || "Guideline-only mode") + "</span>" +
-          '<span>' + escapeHtml(String(entry.runtimeMs)) + " ms</span>" +
-          "</div>" +
-          '<div class="history-actions">' +
-          '<button class="btn btn-ghost btn-small" data-history-id="' + escapeHtml(entry.id) + '" data-history-action="restore">Open</button>' +
-          '<button class="btn btn-secondary btn-small" data-history-id="' + escapeHtml(entry.id) + '" data-history-action="rerun">Run Again</button>' +
-          "</div>" +
-          "</article>"
-        );
-      })
-      .join("");
-  }
+      const titleWrap = document.createElement("div");
+      const title = document.createElement("span");
+      title.className = "history__item-title";
+      title.textContent = h.toolLabel;
+      const meta = document.createElement("span");
+      meta.className = "history__item-meta";
+      meta.textContent = " · " + (h.patientId || "no patient");
+      titleWrap.append(title, meta);
 
-  function restoreHistory(historyId) {
-    var entry = findHistoryEntry(historyId);
-    if (!entry) {
-      return;
-    }
+      const time = document.createElement("span");
+      time.className = "history__item-meta";
+      time.textContent = formatTime(h.completedAt) + " · " + h.runtimeMs + " ms";
 
-    activateTool(entry.toolId);
-    applyRequestBody(entry.toolId, entry.body || {});
-    syncPatientContext();
-    showResult(entry.markdown, {
-      toolId: entry.toolId,
-      toolLabel: entry.toolLabel,
-      patientId: entry.patientId || "",
-      body: entry.body || {},
-      runtimeMs: entry.runtimeMs || 0,
-      completedAt: entry.completedAt,
-    }, { skipHistory: true });
-    showToast("Restored a previous analysis.");
-  }
+      const actions = document.createElement("span");
+      const openBtn = document.createElement("button");
+      openBtn.type = "button";
+      openBtn.className = "history__item-action";
+      openBtn.dataset.historyId = h.id;
+      openBtn.dataset.action = "open";
+      openBtn.textContent = "Open";
+      const rerunBtn = document.createElement("button");
+      rerunBtn.type = "button";
+      rerunBtn.className = "history__item-action";
+      rerunBtn.dataset.historyId = h.id;
+      rerunBtn.dataset.action = "rerun";
+      rerunBtn.textContent = "Rerun";
+      actions.append(openBtn, rerunBtn);
 
-  function rerunHistory(historyId) {
-    var entry = findHistoryEntry(historyId);
-    if (!entry) {
-      return;
-    }
-
-    activateTool(entry.toolId);
-    applyRequestBody(entry.toolId, entry.body || {});
-    syncPatientContext();
-    runTool();
-  }
-
-  function findHistoryEntry(historyId) {
-    return state.history.find(function (entry) {
-      return entry.id === historyId;
+      li.append(titleWrap, time, actions);
+      refs.historyList.append(li);
     });
   }
 
-  function applyRequestBody(toolId, body) {
-    refs.patientIdInput.value = body.patientId || refs.patientIdInput.value;
+  function toggleHistory() {
+    state.historyOpen = !state.historyOpen;
+    refs.history.setAttribute("aria-expanded", String(state.historyOpen));
+  }
 
+  function openHistory(id) {
+    const entry = state.history.find((h) => h.id === id);
+    if (!entry) return;
+    selectTool(entry.toolId, { quiet: true });
+    applyBody(entry.toolId, entry.body || {});
+    refs.patientInput.value = entry.patientId || "";
+    state.lastResult = { markdown: entry.markdown, meta: entry };
+    renderResult(entry.markdown, entry);
+  }
+
+  function rerunHistory(id) {
+    const entry = state.history.find((h) => h.id === id);
+    if (!entry) return;
+    selectTool(entry.toolId, { quiet: true });
+    applyBody(entry.toolId, entry.body || {});
+    refs.patientInput.value = entry.patientId || "";
+    run();
+  }
+
+  function applyBody(toolId, body) {
     if (toolId === "drug-interactions") {
-      refs.medListInput.value = Array.isArray(body.medications)
-        ? body.medications.join("\n")
-        : "";
+      refs.medList.value = Array.isArray(body.medications) ? body.medications.join("\n") : "";
     } else if (toolId === "lab-results") {
-      refs.lookbackInput.value = String(body.lookbackDays || 90);
+      refs.lookback.value = body.lookbackDays || 90;
     } else if (toolId === "risk-score") {
-      refs.calculatorSelect.value = body.calculator || refs.calculatorSelect.value;
+      refs.calculator.value = body.calculator || "CHA2DS2-VASc";
     } else if (toolId === "clinical-guidelines") {
-      refs.conditionInput.value = body.condition || "";
+      refs.condition.value = body.condition || "";
     }
   }
 
-  async function copyLatestResult() {
-    if (!state.lastResultMarkdown) {
-      showToast("No result available yet.");
-      return;
-    }
+  // ── Copy / download ───────────────────────────────────────────────────────
 
+  async function copyResult() {
+    if (!state.lastResult) return;
     try {
-      await navigator.clipboard.writeText(state.lastResultMarkdown);
-      showToast("Latest markdown copied.");
-    } catch (_error) {
-      showToast("Clipboard access failed.");
+      await navigator.clipboard.writeText(state.lastResult.markdown);
+      toast("Copied as Markdown.");
+    } catch (_) {
+      toast("Clipboard access blocked.");
     }
   }
 
-  function downloadLatestResult() {
-    if (!state.lastResultMarkdown || !state.lastRunMeta) {
-      showToast("No result available yet.");
-      return;
-    }
-
-    var filename =
+  function downloadResult() {
+    if (!state.lastResult) return;
+    const { markdown, meta } = state.lastResult;
+    const filename =
       "medassist-" +
-      state.lastRunMeta.toolId +
+      meta.toolId +
       "-" +
-      state.lastRunMeta.completedAt.slice(0, 19).replace(/[:T]/g, "-") +
+      meta.completedAt.slice(0, 19).replace(/[:T]/g, "-") +
       ".md";
-
-    var blob = new Blob([state.lastResultMarkdown], { type: "text/markdown" });
-    var url = URL.createObjectURL(blob);
-    var link = document.createElement("a");
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showToast("Markdown downloaded.");
   }
 
-  function renderScenarioCards() {
-    refs.scenarioGrid.innerHTML = DEMO_SCENARIOS.map(function (scenario) {
-      var scenarioStateClass =
-        scenario.id === state.activeScenarioId ? " scenario-card-active" : "";
-      return (
-        '<article class="scenario-card' + scenarioStateClass + '">' +
-        '<p class="scenario-accent">' + escapeHtml(scenario.accent) + "</p>" +
-        '<h4>' + escapeHtml(scenario.title) + "</h4>" +
-        '<p class="scenario-copy">' + escapeHtml(scenario.narrative) + "</p>" +
-        '<button class="btn btn-secondary btn-small" data-scenario-id="' + escapeHtml(scenario.id) + '">Stage Scenario</button>' +
-        "</article>"
-      );
-    }).join("");
-  }
+  // ── Toast ─────────────────────────────────────────────────────────────────
 
-  function showToast(message) {
+  function toast(message) {
     refs.toast.textContent = message;
-    refs.toast.classList.add("is-visible");
-    window.clearTimeout(showToast._timer);
-    showToast._timer = window.setTimeout(function () {
-      refs.toast.classList.remove("is-visible");
+    refs.toast.dataset.visible = "true";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => {
+      refs.toast.dataset.visible = "false";
     }, 2200);
   }
 
-  function restoreDraftState() {
+  // ── Draft persistence ─────────────────────────────────────────────────────
+
+  function saveDraft() {
     try {
-      var raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (!raw) {
-        return;
-      }
-
-      var draft = JSON.parse(raw);
-      state.activeTool = draft.activeTool || state.activeTool;
-      state.activeScenarioId = draft.activeScenarioId || "";
-      state.patientHint = draft.patientHint || "";
-      refs.patientIdInput.value = draft.patientId || "";
-      refs.medListInput.value = draft.medList || "";
-      refs.lookbackInput.value = String(draft.lookbackDays || 90);
-      refs.calculatorSelect.value = draft.calculator || refs.calculatorSelect.value;
-      refs.conditionInput.value = draft.condition || "";
-
-      if (draft.lastResultMarkdown && draft.lastRunMeta) {
-        state.lastResultMarkdown = draft.lastResultMarkdown;
-        state.lastRunMeta = draft.lastRunMeta;
-      }
-    } catch (_error) {
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
-    }
-  }
-
-  function saveDraftState() {
-    try {
-      window.localStorage.setItem(
-        DRAFT_STORAGE_KEY,
+      localStorage.setItem(
+        DRAFT_KEY,
         JSON.stringify({
           activeTool: state.activeTool,
-          activeScenarioId: state.activeScenarioId,
-          patientHint: state.patientHint,
-          patientId: refs.patientIdInput.value.trim(),
-          medList: refs.medListInput.value,
-          lookbackDays: refs.lookbackInput.value,
-          calculator: refs.calculatorSelect.value,
-          condition: refs.conditionInput.value.trim(),
-          lastResultMarkdown: state.lastResultMarkdown,
-          lastRunMeta: state.lastRunMeta,
-        }),
+          patientId: refs.patientInput.value.trim(),
+          medList: refs.medList.value,
+          lookbackDays: refs.lookback.value,
+          calculator: refs.calculator.value,
+          condition: refs.condition.value.trim(),
+        })
       );
-    } catch (_error) {
-      // Ignore storage failures in privacy-restricted browsers.
-    }
+    } catch (_) {}
   }
 
-  function summarizeMarkdown(markdown) {
-    var compact = markdown
-      .split("\n")
-      .map(function (line) {
-        return line.trim();
-      })
-      .filter(function (line) {
-        return line && !/^#/.test(line) && !/^[-*]/.test(line) && !/^\|/.test(line);
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.activeTool && TOOLS[draft.activeTool]) state.activeTool = draft.activeTool;
+      if (typeof draft.patientId === "string") refs.patientInput.value = draft.patientId;
+      if (typeof draft.medList === "string") refs.medList.value = draft.medList;
+      if (draft.lookbackDays) refs.lookback.value = draft.lookbackDays;
+      if (draft.calculator) refs.calculator.value = draft.calculator;
+      if (typeof draft.condition === "string") refs.condition.value = draft.condition;
+    } catch (_) {}
+  }
+
+  // ── Time formatting ───────────────────────────────────────────────────────
+
+  function formatTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
       });
-
-    if (!compact.length) {
-      return "Structured output is ready.";
+    } catch (_) {
+      return iso;
     }
-
-    return compact[0].slice(0, 180);
   }
 
-  function formatTimestamp(isoString) {
-    var date = new Date(isoString);
-    return date.toLocaleString([], {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  }
+  // ── Markdown renderer ─────────────────────────────────────────────────────
+  // Handles ATX headers, fenced code, GFM tables, ordered/unordered lists
+  // (with indent-based nesting), blockquotes, hr, inline code, bold, italic.
+  // All interpolated content flows through escHtml/escAttr; the only HTML
+  // that reaches the DOM is the static markup this function emits.
 
-  // Lightweight markdown renderer
-  function renderMarkdown(markdown) {
-    var lines = markdown.split("\n");
-    var html = [];
-    var inCodeBlock = false;
-    var inTable = false;
-    var inList = false;
-    var listType = "";
-    var i = 0;
+  function renderMarkdown(md) {
+    const lines = String(md || "").replace(/\r\n?/g, "\n").split("\n");
+    const out = [];
+    let i = 0;
+    let inFence = false;
+    let fenceLang = "";
+    let fenceBuf = [];
 
     while (i < lines.length) {
-      var line = lines[i];
-      var trimmed = line.trim();
+      const line = lines[i];
+      const trimmed = line.trim();
 
-      if (trimmed.startsWith("```")) {
-        if (inCodeBlock) {
-          html.push("</code></pre>");
-          inCodeBlock = false;
-        } else {
-          html.push("<pre><code>");
-          inCodeBlock = true;
-        }
+      const fenceOpen = trimmed.match(/^```\s*([^\s`]*)\s*$/);
+      if (fenceOpen && !inFence) {
+        inFence = true;
+        fenceLang = fenceOpen[1] || "";
+        fenceBuf = [];
         i++;
         continue;
       }
-
-      if (inCodeBlock) {
-        html.push(escapeHtml(line) + "\n");
+      if (trimmed === "```" && inFence) {
+        out.push(
+          "<pre><code" +
+            (fenceLang ? ' class="language-' + escAttr(fenceLang) + '"' : "") +
+            ">" +
+            escHtml(fenceBuf.join("\n")) +
+            "</code></pre>"
+        );
+        inFence = false;
+        fenceLang = "";
+        fenceBuf = [];
+        i++;
+        continue;
+      }
+      if (inFence) {
+        fenceBuf.push(line);
         i++;
         continue;
       }
 
       if (trimmed === "") {
-        if (inList) {
-          html.push(listType === "ul" ? "</ul>" : "</ol>");
-          inList = false;
+        i++;
+        continue;
+      }
+
+      if (/^(?:---|\*\*\*|___)\s*$/.test(trimmed)) {
+        out.push("<hr>");
+        i++;
+        continue;
+      }
+
+      const h = trimmed.match(/^(#{1,6})\s+(.*?)\s*#*$/);
+      if (h) {
+        const level = h[1].length;
+        out.push("<h" + level + ">" + inline(h[2]) + "</h" + level + ">");
+        i++;
+        continue;
+      }
+
+      if (/^>\s?/.test(trimmed)) {
+        const buf = [];
+        while (i < lines.length && /^>\s?/.test(lines[i].trim())) {
+          buf.push(lines[i].trim().replace(/^>\s?/, ""));
+          i++;
         }
-        if (inTable) {
-          html.push("</tbody></table>");
-          inTable = false;
+        out.push("<blockquote>" + inline(buf.join(" ")) + "</blockquote>");
+        continue;
+      }
+
+      if (
+        line.includes("|") &&
+        i + 1 < lines.length &&
+        /^\s*\|?\s*[-:]+(\s*\|\s*[-:]+)+\s*\|?\s*$/.test(lines[i + 1])
+      ) {
+        const headerCells = splitTableRow(line);
+        out.push("<table><thead><tr>");
+        headerCells.forEach((c) => out.push("<th>" + inline(c) + "</th>"));
+        out.push("</tr></thead><tbody>");
+        i += 2;
+        while (i < lines.length && lines[i].trim() && lines[i].includes("|")) {
+          const cells = splitTableRow(lines[i]);
+          out.push("<tr>");
+          cells.forEach((c) => out.push("<td>" + inline(c) + "</td>"));
+          out.push("</tr>");
+          i++;
         }
-        i++;
+        out.push("</tbody></table>");
         continue;
       }
 
-      if (/^(---|\*\*\*|___)$/.test(trimmed)) {
-        html.push("<hr>");
-        i++;
+      if (isListLine(line)) {
+        const consumed = renderList(lines, i, listIndent(line));
+        out.push(consumed.html);
+        i = consumed.next;
         continue;
       }
 
-      var headerMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
-      if (headerMatch) {
-        var level = headerMatch[1].length;
-        html.push("<h" + level + ">" + inlineFormat(headerMatch[2]) + "</h" + level + ">");
+      const para = [trimmed];
+      i++;
+      while (
+        i < lines.length &&
+        lines[i].trim() !== "" &&
+        !/^#{1,6}\s+/.test(lines[i].trim()) &&
+        !isListLine(lines[i]) &&
+        !/^>\s?/.test(lines[i].trim()) &&
+        !/^```/.test(lines[i].trim()) &&
+        !(
+          lines[i].includes("|") &&
+          i + 1 < lines.length &&
+          /^\s*\|?\s*[-:]+(\s*\|\s*[-:]+)+\s*\|?\s*$/.test(lines[i + 1])
+        )
+      ) {
+        para.push(lines[i].trim());
         i++;
-        continue;
       }
+      out.push("<p>" + inline(para.join(" ")) + "</p>");
+    }
 
-      if (trimmed.startsWith(">")) {
-        html.push("<blockquote>" + inlineFormat(trimmed.replace(/^>\s?/, "")) + "</blockquote>");
-        i++;
-        continue;
-      }
+    if (inFence) {
+      out.push("<pre><code>" + escHtml(fenceBuf.join("\n")) + "</code></pre>");
+    }
 
-      var isUnordered = /^[-*]\s+/.test(trimmed);
-      var isOrdered = /^\d+[.)]\s+/.test(trimmed);
-      if (inList && !isUnordered && !isOrdered) {
-        html.push(listType === "ul" ? "</ul>" : "</ol>");
-        inList = false;
-      }
+    return out.join("");
+  }
 
-      if (trimmed.includes("|") && !inTable) {
-        if (i + 1 < lines.length && /^\|?\s*[-:]+[-|:\s]*$/.test(lines[i + 1].trim())) {
-          var headerCells = parseTableRow(line);
-          html.push("<table><thead><tr>");
-          headerCells.forEach(function (cell) {
-            html.push("<th>" + inlineFormat(cell) + "</th>");
-          });
-          html.push("</tr></thead><tbody>");
-          inTable = true;
-          i += 2;
+  function isListLine(line) {
+    return /^\s*([-*+]|\d+[.)])\s+/.test(line);
+  }
+
+  function listKind(line) {
+    if (/^\s*(\d+)[.)]\s+/.test(line)) return "ol";
+    return "ul";
+  }
+
+  function listIndent(line) {
+    const m = line.match(/^(\s*)/);
+    return m ? m[1].replace(/\t/g, "  ").length : 0;
+  }
+
+  function renderList(lines, start, baseIndent) {
+    const kind = listKind(lines[start]);
+    const html = ["<" + kind + ">"];
+    let i = start;
+
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.trim() === "") {
+        if (
+          i + 1 < lines.length &&
+          isListLine(lines[i + 1]) &&
+          listIndent(lines[i + 1]) >= baseIndent
+        ) {
+          i++;
           continue;
         }
+        break;
+      }
+      if (!isListLine(line)) break;
+      const indent = listIndent(line);
+      if (indent < baseIndent) break;
+      if (indent > baseIndent) {
+        // shouldn't happen at this depth — let outer loop handle
+        break;
       }
 
-      if (inTable && trimmed.includes("|")) {
-        var cells = parseTableRow(line);
-        html.push("<tr>");
-        cells.forEach(function (cell) {
-          html.push("<td>" + inlineFormat(cell) + "</td>");
-        });
-        html.push("</tr>");
-        i++;
-        continue;
-      }
+      const stripped = line.replace(/^\s*([-*+]|\d+[.)])\s+/, "");
+      const itemHtml = [inline(stripped)];
 
-      if (isUnordered) {
-        if (!inList || listType !== "ul") {
-          if (inList) {
-            html.push(listType === "ul" ? "</ul>" : "</ol>");
-          }
-          html.push("<ul>");
-          inList = true;
-          listType = "ul";
-        }
-        html.push("<li>" + inlineFormat(trimmed.replace(/^[-*]\s+/, "")) + "</li>");
-        i++;
-        continue;
-      }
-
-      if (isOrdered) {
-        if (!inList || listType !== "ol") {
-          if (inList) {
-            html.push(listType === "ul" ? "</ul>" : "</ol>");
-          }
-          html.push("<ol>");
-          inList = true;
-          listType = "ol";
-        }
-        html.push("<li>" + inlineFormat(trimmed.replace(/^\d+[.)]\s+/, "")) + "</li>");
-        i++;
-        continue;
-      }
-
-      html.push("<p>" + inlineFormat(trimmed) + "</p>");
       i++;
+      while (i < lines.length) {
+        const next = lines[i];
+        if (next.trim() === "") {
+          // blank inside list — peek ahead
+          if (
+            i + 1 < lines.length &&
+            isListLine(lines[i + 1]) &&
+            listIndent(lines[i + 1]) > indent
+          ) {
+            i++;
+            continue;
+          }
+          break;
+        }
+        const nextIndent = listIndent(next);
+        if (isListLine(next) && nextIndent > indent) {
+          const nested = renderList(lines, i, nextIndent);
+          itemHtml.push(nested.html);
+          i = nested.next;
+          continue;
+        }
+        if (!isListLine(next) && nextIndent > indent) {
+          itemHtml.push(" " + inline(next.trim()));
+          i++;
+          continue;
+        }
+        break;
+      }
+
+      html.push("<li>" + itemHtml.join("") + "</li>");
     }
 
-    if (inList) {
-      html.push(listType === "ul" ? "</ul>" : "</ol>");
-    }
-    if (inTable) {
-      html.push("</tbody></table>");
-    }
-    if (inCodeBlock) {
-      html.push("</code></pre>");
-    }
-
-    return html.join("");
+    html.push("</" + kind + ">");
+    return { html: html.join(""), next: i };
   }
 
-  function parseTableRow(line) {
-    return line
-      .trim()
-      .replace(/^\|/, "")
-      .replace(/\|$/, "")
-      .split("|")
-      .map(function (cell) {
-        return cell.trim();
-      });
+  function splitTableRow(line) {
+    let s = line.trim();
+    s = s.replace(/^\|/, "").replace(/\|$/, "");
+    return s.split("|").map((c) => c.trim());
   }
 
-  function inlineFormat(text) {
-    return escapeHtml(text)
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  function inline(text) {
+    let html = escHtml(text);
+    const codes = [];
+    html = html.replace(/`([^`]+)`/g, (_, c) => {
+      codes.push(c);
+      return "\u0001CODE" + (codes.length - 1) + "\u0001";
+    });
+    html = html.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(
+      /(^|[\s(])\*([^*\n]+)\*(?=[\s.,;:!?)]|$)/g,
+      "$1<em>$2</em>"
+    );
+    html = html.replace(/\u0001CODE(\d+)\u0001/g, (_, idx) => "<code>" + codes[+idx] + "</code>");
+    return html;
   }
 
-  function escapeHtml(value) {
+  function escHtml(value) {
     return String(value)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function escAttr(value) {
+    return escHtml(value);
   }
 })();
