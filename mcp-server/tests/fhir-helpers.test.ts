@@ -13,6 +13,8 @@ import {
   formatDate,
   conditionMatchesKeywords,
   getSnomedCode,
+  formatResourceRef,
+  formatResourceRefParts,
 } from '../src/utils/fhir-helpers.js';
 import type { Patient, HumanName, CodeableConcept, Condition } from '../src/fhir/types.js';
 import { mockPatient, mockCondition } from './helpers/mock-fhir.js';
@@ -481,5 +483,47 @@ describe('getSnomedCode', () => {
       ],
     };
     expect(getSnomedCode(concept)).toBe('44054006');
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// formatResourceRef + formatResourceRefParts
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('formatResourceRef', () => {
+  it('formats a resource with both type and id', () => {
+    expect(formatResourceRef({ resourceType: 'Condition', id: 'abc-123' })).toBe(
+      ' `Condition/abc-123`',
+    );
+  });
+
+  it('returns empty string when id is missing', () => {
+    expect(formatResourceRef({ resourceType: 'Condition' })).toBe('');
+  });
+
+  it('returns empty string when resourceType is missing', () => {
+    expect(formatResourceRef({ id: 'abc-123' })).toBe('');
+  });
+
+  it('returns empty string when resource is null', () => {
+    expect(formatResourceRef(null)).toBe('');
+  });
+
+  it('returns empty string when resource is undefined', () => {
+    expect(formatResourceRef(undefined)).toBe('');
+  });
+});
+
+describe('formatResourceRefParts', () => {
+  it('formats a complete pair', () => {
+    expect(formatResourceRefParts('Observation', 'obs-99')).toBe(' `Observation/obs-99`');
+  });
+
+  it('returns empty string when id is undefined', () => {
+    expect(formatResourceRefParts('Observation', undefined)).toBe('');
+  });
+
+  it('returns empty string when resourceType is undefined', () => {
+    expect(formatResourceRefParts(undefined, 'obs-99')).toBe('');
   });
 });

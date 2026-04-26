@@ -1,7 +1,8 @@
 import type { FHIRClient } from "../fhir/client.js";
 import { getActiveMedications } from "../fhir/queries/medications.js";
 import { getAllergies } from "../fhir/queries/allergies.js";
-import { getCodeDisplay } from "../utils/fhir-helpers.js";
+import { getCodeDisplay, formatResourceRef } from "../utils/fhir-helpers.js";
+import type { MedicationRequest } from "../fhir/types.js";
 import { DRUG_INTERACTION_MATRIX } from "../config/constants.js";
 import { getRxCUI, getMultiInteractions } from "../external/rxnorm.js";
 import { searchDrugLabel } from "../external/openfda.js";
@@ -40,10 +41,11 @@ export async function checkDrugInteractions(
 ): Promise<string> {
   const parts: string[] = [];
   let medicationNames: string[] = input.medications ?? [];
+  let fhirMeds: MedicationRequest[] = [];
 
   // ── Gather medications from FHIR if patientId is provided ──────────────
   if (input.patientId && client) {
-    const fhirMeds = await getActiveMedications(client, input.patientId);
+    fhirMeds = await getActiveMedications(client, input.patientId);
     const fhirMedNames = fhirMeds.map((m) =>
       getCodeDisplay(m.medicationCodeableConcept),
     );
@@ -58,6 +60,16 @@ export async function checkDrugInteractions(
   parts.push("");
   parts.push(`**Medications Evaluated:** ${medicationNames.join(", ")}`);
   parts.push("");
+
+  // ── Patient medications (cited from FHIR) ──────────────────────────────
+  if (fhirMeds.length > 0) {
+    parts.push("## Patient Medications (from FHIR)");
+    for (const m of fhirMeds) {
+      const name = getCodeDisplay(m.medicationCodeableConcept);
+      parts.push(`- ${name}${formatResourceRef(m)}`);
+    }
+    parts.push("");
+  }
 
   // ── 1. Check local DRUG_INTERACTION_MATRIX ─────────────────────────────
   const localInteractions = checkLocalMatrix(medicationNames);

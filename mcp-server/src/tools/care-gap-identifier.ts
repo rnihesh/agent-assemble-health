@@ -18,6 +18,7 @@ import {
   formatDate,
   daysAgo,
   conditionMatchesKeywords,
+  formatResourceRef,
 } from "../utils/fhir-helpers.js";
 import type { Observation, Procedure, Immunization, Condition } from "../fhir/types.js";
 
@@ -34,6 +35,8 @@ interface CareGap {
   dueDate?: string;
   priority: "HIGH" | "MODERATE" | "LOW";
   details?: string;
+  /** Pre-formatted citation, e.g. " `Immunization/abc-123`". Empty when no source resource. */
+  sourceRef?: string;
 }
 
 export async function identifyCareGaps(
@@ -95,7 +98,7 @@ export async function identifyCareGaps(
       parts.push(`- **Priority:** ${gap.priority}`);
       parts.push(`- **Guideline:** ${gap.guidelineSource}`);
       if (gap.grade) parts.push(`- **Grade:** ${gap.grade}`);
-      if (gap.lastPerformed) parts.push(`- **Last Performed:** ${gap.lastPerformed}`);
+      if (gap.lastPerformed) parts.push(`- **Last Performed:** ${gap.lastPerformed}${gap.sourceRef ?? ""}`);
       if (gap.dueDate) parts.push(`- **Due:** ${gap.dueDate}`);
       if (gap.details) parts.push(`- **Details:** ${gap.details}`);
       parts.push("");
@@ -111,7 +114,7 @@ export async function identifyCareGaps(
       parts.push(`### ${gap.recommendation}`);
       parts.push(`- **Priority:** ${gap.priority}`);
       parts.push(`- **Guideline:** ${gap.guidelineSource}`);
-      if (gap.lastPerformed) parts.push(`- **Last Administered:** ${gap.lastPerformed}`);
+      if (gap.lastPerformed) parts.push(`- **Last Administered:** ${gap.lastPerformed}${gap.sourceRef ?? ""}`);
       if (gap.dueDate) parts.push(`- **Due:** ${gap.dueDate}`);
       if (gap.details) parts.push(`- **Details:** ${gap.details}`);
       parts.push("");
@@ -127,7 +130,7 @@ export async function identifyCareGaps(
       parts.push(`### ${gap.recommendation}`);
       parts.push(`- **Priority:** ${gap.priority}`);
       parts.push(`- **Guideline:** ${gap.guidelineSource}`);
-      if (gap.lastPerformed) parts.push(`- **Last Performed:** ${gap.lastPerformed}`);
+      if (gap.lastPerformed) parts.push(`- **Last Performed:** ${gap.lastPerformed}${gap.sourceRef ?? ""}`);
       if (gap.dueDate) parts.push(`- **Due:** ${gap.dueDate}`);
       if (gap.details) parts.push(`- **Details:** ${gap.details}`);
       parts.push("");
@@ -246,6 +249,7 @@ function checkImmunizationGaps(
         ? "MODERATE"
         : "LOW";
 
+      const sourceImm = matchingImmunizations[0];
       gaps.push({
         category: "Vaccination",
         recommendation: `${schedule.vaccine}: ${schedule.frequency}`,
@@ -254,6 +258,7 @@ function checkImmunizationGaps(
         dueDate: "Now",
         priority,
         details: schedule.conditions ?? undefined,
+        sourceRef: sourceImm ? formatResourceRef(sourceImm) : undefined,
       });
     }
   }
@@ -319,6 +324,7 @@ function checkMonitoringGaps(
             dueDate: formatDate(addDays(obsDate, thresholdDays)),
             priority: "MODERATE",
             details: `Last result: ${lastObs.valueQuantity?.value ?? "N/A"} ${lastObs.valueQuantity?.unit ?? ""}. Monitoring schedule: ${guideline.monitoringSchedule}`,
+            sourceRef: formatResourceRef(lastObs),
           });
         }
       }

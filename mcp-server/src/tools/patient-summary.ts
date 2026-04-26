@@ -13,6 +13,7 @@ import {
   getLoincCode,
   formatDate,
   calculateBMI,
+  formatResourceRef,
 } from "../utils/fhir-helpers.js";
 import { LAB_REFERENCE_RANGES } from "../config/constants.js";
 import type { Observation, Patient } from "../fhir/types.js";
@@ -100,7 +101,7 @@ export async function patientSummary(
       for (const c of conditions) {
         const display = getCodeDisplay(c.code);
         const onset = c.onsetDateTime ? ` (onset: ${formatDate(c.onsetDateTime)})` : "";
-        parts.push(`- ${display}${onset}`);
+        parts.push(`- ${display}${onset}${formatResourceRef(c)}`);
       }
     }
     parts.push("");
@@ -118,7 +119,7 @@ export async function patientSummary(
         const dosage = m.dosageInstruction?.[0]?.text ?? "";
         const authored = m.authoredOn ? ` | Prescribed: ${formatDate(m.authoredOn)}` : "";
         const requester = m.requester?.display ? ` | By: ${m.requester.display}` : "";
-        parts.push(`- **${name}** ${dosage}${authored}${requester}`);
+        parts.push(`- **${name}** ${dosage}${authored}${requester}${formatResourceRef(m)}`);
       }
     }
     parts.push("");
@@ -144,7 +145,7 @@ export async function patientSummary(
           .join("; ");
         const severity = a.criticality ? ` [Criticality: ${a.criticality}]` : "";
         const reactionText = reactions ? ` - Reactions: ${reactions}` : "";
-        parts.push(`- **${allergen}**${severity}${reactionText}`);
+        parts.push(`- **${allergen}**${severity}${reactionText}${formatResourceRef(a)}`);
       }
     }
     parts.push("");
@@ -157,15 +158,16 @@ export async function patientSummary(
     if (labs.length === 0) {
       parts.push("No recent lab results.");
     } else {
-      parts.push("| Test | Value | Units | Flag | Date |");
-      parts.push("|------|-------|-------|------|------|");
+      parts.push("| Test | Value | Units | Flag | Date | Source |");
+      parts.push("|------|-------|-------|------|------|--------|");
       for (const obs of labs) {
         const name = getCodeDisplay(obs.code);
         const value = obs.valueQuantity?.value?.toString() ?? obs.valueString ?? getCodeDisplay(obs.valueCodeableConcept) ?? "N/A";
         const units = obs.valueQuantity?.unit ?? "";
         const flag = getLabFlag(obs, age, sex);
         const date = formatDate(obs.effectiveDateTime ?? obs.effectivePeriod?.start);
-        parts.push(`| ${name} | ${value} | ${units} | ${flag} | ${date} |`);
+        const ref = formatResourceRef(obs).trimStart();
+        parts.push(`| ${name} | ${value} | ${units} | ${flag} | ${date} | ${ref} |`);
       }
     }
     parts.push("");
@@ -207,7 +209,7 @@ export async function patientSummary(
         const vaccine = getCodeDisplay(i.vaccineCode);
         const date = formatDate(i.occurrenceDateTime ?? i.occurrenceString);
         const status = i.status ?? "";
-        parts.push(`- ${vaccine} | ${date} | ${status}`);
+        parts.push(`- ${vaccine} | ${date} | ${status}${formatResourceRef(i)}`);
       }
     }
     parts.push("");

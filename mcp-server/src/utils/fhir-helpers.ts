@@ -173,3 +173,30 @@ export function getSnomedCode(concept: CodeableConcept | undefined): string | nu
   );
   return snomed?.code ?? null;
 }
+
+/**
+ * Format a FHIR resource as an inline citation token, e.g. `Condition/abc-123`.
+ * Returns the empty string when the resource is missing a resourceType or id —
+ * callers can append unconditionally without producing dangling " ``" suffixes.
+ *
+ * The leading single space is intentional: callers append directly to the end
+ * of an emitted line, and an empty return collapses cleanly.
+ */
+export function formatResourceRef(
+  resource: { resourceType?: string; id?: string } | null | undefined,
+): string {
+  if (!resource) return "";
+  return formatResourceRefParts(resource.resourceType, resource.id);
+}
+
+/**
+ * Format a citation from a separately-known resourceType + id pair.
+ * Use this when you have a resource id but not the typed resource object.
+ */
+export function formatResourceRefParts(
+  resourceType: string | undefined,
+  id: string | undefined,
+): string {
+  if (!resourceType || !id) return "";
+  return ` \`${resourceType}/${id}\``;
+}

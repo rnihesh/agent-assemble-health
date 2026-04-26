@@ -10,6 +10,7 @@ import {
   formatDate,
   calculateEGFR,
   calculateAnionGap,
+  formatResourceRefParts,
 } from "../utils/fhir-helpers.js";
 import type { Observation } from "../fhir/types.js";
 
@@ -28,6 +29,7 @@ interface InterpretedLab {
   flag: FlagLevel;
   normalRange: string;
   date: string;
+  observationId?: string;
 }
 
 interface LabTrend {
@@ -82,7 +84,7 @@ export async function interpretLabResults(
     parts.push("");
     for (const c of criticals) {
       parts.push(
-        `- **${c.name}:** ${c.value} ${c.unit} [**${c.flag}**] (Normal: ${c.normalRange}) - ${formatDate(c.date)}`,
+        `- **${c.name}:** ${c.value} ${c.unit} [**${c.flag}**] (Normal: ${c.normalRange}) - ${formatDate(c.date)}${formatResourceRefParts("Observation", c.observationId)}`,
       );
     }
     parts.push("");
@@ -99,11 +101,12 @@ export async function interpretLabResults(
   if (abnormals.length > 0) {
     parts.push("## Abnormal Results");
     parts.push("");
-    parts.push("| Test | Value | Units | Flag | Normal Range | Date |");
-    parts.push("|------|-------|-------|------|--------------|------|");
+    parts.push("| Test | Value | Units | Flag | Normal Range | Date | Source |");
+    parts.push("|------|-------|-------|------|--------------|------|--------|");
     for (const a of abnormals) {
+      const ref = formatResourceRefParts("Observation", a.observationId).trimStart();
       parts.push(
-        `| ${a.name} | ${a.value} | ${a.unit} | **${a.flag}** | ${a.normalRange} | ${formatDate(a.date)} |`,
+        `| ${a.name} | ${a.value} | ${a.unit} | **${a.flag}** | ${a.normalRange} | ${formatDate(a.date)} | ${ref} |`,
       );
     }
     parts.push("");
@@ -183,7 +186,16 @@ function interpretLabs(
 
     const { flag, normalRange } = evaluateValue(loincCode, value, age, sex);
 
-    results.push({ name, loincCode, value, unit, flag, normalRange, date });
+    results.push({
+      name,
+      loincCode,
+      value,
+      unit,
+      flag,
+      normalRange,
+      date,
+      observationId: obs.id,
+    });
   }
 
   return results;
