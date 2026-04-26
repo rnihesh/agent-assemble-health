@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { FHIRClient } from "./fhir/client.js";
 import { ENV } from "./config/env.js";
-import { extractSharpContext } from "./auth/sharp-context.js";
+import { resolveSharpContext } from "./auth/sharp-context.js";
+import { getCurrentRequestHeaders } from "./auth/request-headers.js";
 import { patientSummary } from "./tools/patient-summary.js";
 import { checkDrugInteractions } from "./tools/drug-interaction.js";
 import { interpretLabResults } from "./tools/lab-interpreter.js";
@@ -11,33 +12,80 @@ import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
 
 /**
- * Build a FHIRClient from the tool _meta context (SHARP) or fall back to
- * environment defaults.
+ * MCP capability declaration for the Prompt Opinion FHIR-context extension.
+ * See https://docs.promptopinion.ai/fhir-context/mcp-fhir-context for the
+ * canonical scope list and the `fhir_context_required` flag semantics.
+ *
+ * `fhir_context_required.value` is `false` so the in-app dashboard (which
+ * does not pass canonical SHARP headers but still exercises the tools via
+ * `_meta`) keeps working. Tool implementations still emit a clear error
+ * when no patient id can be resolved from any source.
+ */
+export const FHIR_CONTEXT_EXTENSION_URI = "ai.promptopinion/fhir-context";
+
+export const FHIR_CONTEXT_EXTENSION = {
+  scopes: [
+    { name: "patient/Patient.rs", required: true },
+    { name: "patient/Observation.rs" },
+    { name: "patient/Condition.rs" },
+    { name: "patient/MedicationStatement.rs" },
+    { name: "patient/AllergyIntolerance.rs" },
+    { name: "patient/Immunization.rs" },
+    { name: "offline_access" },
+  ],
+  fhir_context_required: { value: false },
+} as const;
+
+/**
+ * Build a FHIRClient from the resolved SHARP context (canonical HTTP headers
+ * first, _meta fallback) or fall back to environment defaults.
  */
 function buildClient(meta: unknown): FHIRClient {
-  const sharp = extractSharpContext(meta);
+  const sharp = resolveSharpContext(getCurrentRequestHeaders(), meta);
   const baseUrl = sharp?.fhirServerUrl ?? ENV.FHIR_BASE_URL;
   const token = sharp?.fhirAccessToken ?? ENV.FHIR_ACCESS_TOKEN;
   return new FHIRClient(baseUrl, token);
 }
 
 /**
- * Resolve the patientId from either the explicit input or the SHARP _meta context.
+ * Resolve the patientId from either the explicit input, canonical SHARP HTTP
+ * headers (the primary spec transport), or the legacy `_meta` field used by
+ * the in-app dashboard.
  */
 export function resolvePatientId(
   inputPatientId: string | undefined,
   meta: unknown,
 ): string | undefined {
   if (inputPatientId) return inputPatientId;
-  const sharp = extractSharpContext(meta);
+  const sharp = resolveSharpContext(getCurrentRequestHeaders(), meta);
   return sharp?.patientId;
 }
 
 export function createMcpServer(): McpServer {
-  const server = new McpServer({
-    name: "medassist",
-    version: "1.0.0",
-  });
+  // Capabilities are passed via the SDK's `capabilities` ServerOptions field.
+  // The MCP spec describes vendor extensions under `capabilities.extensions[uri]`;
+  // see https://docs.promptopinion.ai/fhir-context/mcp-fhir-context. We mirror
+  // the shape used by po-community-mcp/typescript/index.ts verbatim.
+  //
+  // The installed @modelcontextprotocol/sdk types validate ServerCapabilities
+  // with a Zod `$strip` schema that does not enumerate `extensions`, but the
+  // transport serializes whatever shape we pass through — same pattern as the
+  // upstream reference. We cast to `any` to surface the extension declaration
+  // through the SDK without rewriting the schema.
+  const capabilities = {
+    extensions: {
+      [FHIR_CONTEXT_EXTENSION_URI]: FHIR_CONTEXT_EXTENSION,
+    },
+  } as unknown as Record<string, unknown>;
+
+  const server = new McpServer(
+    {
+      name: "medassist",
+      version: "1.0.0",
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { capabilities: capabilities as any },
+  );
 
   // ── patient_summary ──────────────────────────────────────────────────────
   server.tool(

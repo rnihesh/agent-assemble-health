@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import uvicorn
 
+from medassist.a2a.agent_card import build_agent_card_v1, serialize_agent_card_v1
 from medassist.agents.root_agent import create_root_agent
 from medassist.config import AGENT_PORT, AGENT_PUBLIC_URL, GOOGLE_API_KEY, MCP_SERVER_URL
 from medassist.sharp.middleware import SharpContextMiddleware
@@ -24,12 +25,6 @@ AGENT_CARD_PATH = Path(__file__).resolve().parents[1] / "agent_card.json"
 # Ensure the Google API key is set in the environment for the ADK to pick up.
 if GOOGLE_API_KEY:
     os.environ.setdefault("GOOGLE_API_KEY", GOOGLE_API_KEY)
-
-
-def load_agent_card() -> dict[str, Any]:
-    """Load the static A2A agent card from disk."""
-    with AGENT_CARD_PATH.open("r", encoding="utf-8") as card_file:
-        return json.load(card_file)
 
 
 def normalize_base_url(base_url: str) -> str:
@@ -81,17 +76,29 @@ def parse_public_base_url(base_url: str) -> tuple[str, str, int]:
 
 
 def build_agent_card(base_url: str | None = None) -> dict[str, Any]:
-    """Load the agent card and apply the correct public URL."""
-    card = load_agent_card()
-    card["url"] = normalize_base_url(base_url or build_public_base_url())
-    return card
+    """Build the v1 A2A agent card JSON for the given public base URL.
+
+    Always renders from the :mod:`medassist.a2a.agent_card` shim so the
+    on-disk ``agent_card.json`` and the served ``/.well-known/agent-card.json``
+    response cannot drift.
+    """
+    public_url = normalize_base_url(base_url or build_public_base_url())
+    return serialize_agent_card_v1(build_agent_card_v1(public_url))
 
 
 def build_agent_card_model(base_url: str | None = None):
-    """Build an A2A AgentCard model from the JSON payload."""
-    from a2a.types import AgentCard
+    """Build the v1 :class:`AgentCardV1` model for ADK ``to_a2a`` consumption."""
+    public_url = normalize_base_url(base_url or build_public_base_url())
+    return build_agent_card_v1(public_url)
 
-    return AgentCard(**build_agent_card(base_url))
+
+def write_agent_card_to_disk(base_url: str | None = None) -> None:
+    """Persist the v1 card JSON to ``agent_card.json`` so static and served forms agree."""
+    payload = build_agent_card(base_url)
+    AGENT_CARD_PATH.write_text(
+        json.dumps(payload, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 async def send_json(send, status: int, payload: dict[str, Any]) -> None:

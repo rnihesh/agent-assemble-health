@@ -1,44 +1,80 @@
 {
-  "name": "MedAssist",
-  "description": "Clinical Decision Support Agent for healthcare professionals. Provides patient summaries, drug interaction checking, lab interpretation, clinical risk scoring, care gap identification, and guideline matching.",
-  "url": "http://localhost:8001",
-  "version": "1.0.0",
   "capabilities": {
-    "streaming": true,
-    "pushNotifications": false
+    "extensions": [
+      {
+        "description": "Receives FHIR launch context (patient ID, FHIR server URL, access token) on inbound A2A messages and forwards it to MedAssist's MCP tools as canonical SHARP HTTP headers.",
+        "required": false,
+        "uri": "https://app.promptopinion.ai/schemas/a2a/v1/fhir-context"
+      }
+    ],
+    "pushNotifications": false,
+    "stateTransitionHistory": false,
+    "streaming": true
   },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain",
+    "text/markdown"
+  ],
+  "description": "Clinical Decision Support Agent for healthcare professionals. Provides patient summaries, drug interaction checking, lab interpretation, clinical risk scoring, care gap identification, and guideline matching.",
+  "name": "MedAssist",
+  "protocolVersion": "0.3.0",
+  "security": [],
+  "securitySchemes": {},
   "skills": [
     {
+      "description": "Generate a complete clinical overview including demographics, conditions, medications, labs, vitals, allergies, immunizations, risk scores, and care gaps for a patient.",
       "id": "patient_review",
       "name": "Comprehensive Patient Review",
-      "description": "Generate a complete clinical overview including demographics, conditions, medications, labs, vitals, allergies, immunizations, risk scores, and care gaps for a patient.",
-      "tags": ["clinical", "patient", "review", "summary"]
+      "tags": [
+        "clinical",
+        "patient",
+        "review",
+        "summary"
+      ]
     },
     {
+      "description": "Evaluate medication safety by checking drug-drug interactions, allergy cross-reactivity, therapeutic duplications, and contraindications for a patient's current or proposed medications.",
       "id": "medication_safety",
       "name": "Medication Safety Check",
-      "description": "Evaluate medication safety by checking drug-drug interactions, allergy cross-reactivity, therapeutic duplications, and contraindications for a patient's current or proposed medications.",
-      "tags": ["medication", "safety", "interactions", "pharmacy"]
+      "tags": [
+        "medication",
+        "safety",
+        "interactions",
+        "pharmacy"
+      ]
     },
     {
+      "description": "Calculate and interpret clinical risk scores (CHA2DS2-VASc, HEART, Wells DVT/PE, ASCVD, CKD-EPI) based on patient data, automatically selecting applicable calculators.",
       "id": "risk_assessment",
       "name": "Clinical Risk Assessment",
-      "description": "Calculate and interpret clinical risk scores (CHA2DS2-VASc, HEART, Wells DVT/PE, ASCVD, CKD-EPI) based on patient data, automatically selecting applicable calculators.",
-      "tags": ["risk", "scoring", "assessment", "clinical"]
+      "tags": [
+        "risk",
+        "scoring",
+        "assessment",
+        "clinical"
+      ]
     },
     {
+      "description": "Identify care gaps including overdue screenings, vaccination gaps, and condition-specific monitoring needs based on USPSTF and CDC guidelines.",
       "id": "preventive_care",
       "name": "Preventive Care Recommendations",
-      "description": "Identify care gaps including overdue screenings, vaccination gaps, and condition-specific monitoring needs based on USPSTF and CDC guidelines.",
-      "tags": ["preventive", "screening", "vaccination", "guidelines"]
+      "tags": [
+        "preventive",
+        "screening",
+        "vaccination",
+        "guidelines"
+      ]
     }
   ],
-  "defaultInputModes": ["text/plain"],
-  "defaultOutputModes": ["text/plain", "text/markdown"],
-  "provider": {
-    "organization": "MedAssist Team",
-    "url": "https://github.com/medassist"
-  },
-  "securitySchemes": {},
-  "security": []
+  "version": "1.0.0",
+  "supportedInterfaces": [
+    {
+      "url": "http://localhost:8001",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ]
 }

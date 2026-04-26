@@ -68,7 +68,10 @@ class TestConfig:
 # ---------------------------------------------------------------------------
 
 class TestAgentCard:
-    """Tests for agent_card.json validity."""
+    """Smoke tests for the on-disk agent_card.json (v1 schema).
+
+    Detailed v1 schema-shape coverage lives in tests/test_agent_card.py.
+    """
 
     @pytest.fixture
     def agent_card(self):
@@ -80,10 +83,19 @@ class TestAgentCard:
     def test_agent_card_is_valid_json(self, agent_card):
         assert isinstance(agent_card, dict)
 
-    def test_agent_card_has_required_fields(self, agent_card):
-        required = ["name", "description", "url", "version", "capabilities", "skills"]
+    def test_agent_card_has_v1_required_fields(self, agent_card):
+        # v1 schema replaces top-level `url`/`preferredTransport` with
+        # `supportedInterfaces[]`; the rest stay required.
+        required = [
+            "name",
+            "description",
+            "version",
+            "capabilities",
+            "skills",
+            "supportedInterfaces",
+        ]
         for field in required:
-            assert field in agent_card, f"Missing required field: {field}"
+            assert field in agent_card, f"Missing required v1 field: {field}"
 
     def test_agent_card_name(self, agent_card):
         assert agent_card["name"] == "MedAssist"
@@ -107,10 +119,16 @@ class TestAgentCard:
     def test_agent_card_capabilities(self, agent_card):
         assert agent_card["capabilities"]["streaming"] is True
         assert agent_card["capabilities"]["pushNotifications"] is False
+        assert agent_card["capabilities"]["stateTransitionHistory"] is False
 
     def test_agent_card_output_modes(self, agent_card):
         assert "text/plain" in agent_card["defaultOutputModes"]
         assert "text/markdown" in agent_card["defaultOutputModes"]
+
+    def test_agent_card_v1_drops_top_level_url_and_preferred_transport(self, agent_card):
+        # v1 wire format moves these under supportedInterfaces[].
+        assert "url" not in agent_card
+        assert "preferredTransport" not in agent_card
 
 
 # ---------------------------------------------------------------------------
@@ -192,14 +210,17 @@ class TestAgentStructure:
 # ---------------------------------------------------------------------------
 
 class TestSharpContext:
-    """Tests for SHARP context extraction."""
+    """Smoke tests for SHARP context extraction (canonical SHARP headers).
 
-    def test_sharp_context_from_valid_headers(self):
+    Detailed coverage lives in tests/test_sharp_context.py.
+    """
+
+    def test_sharp_context_from_valid_canonical_headers(self):
         from medassist.sharp.context import SharpContext
         headers = {
-            "x-sharp-patient-id": "patient-123",
-            "x-sharp-fhir-url": "https://fhir.example.com",
-            "x-sharp-fhir-token": "Bearer abc123",
+            "X-Patient-ID": "patient-123",
+            "X-FHIR-Server-URL": "https://fhir.example.com",
+            "X-FHIR-Access-Token": "Bearer abc123",
         }
         ctx = SharpContext.from_headers(headers)
         assert ctx is not None
@@ -210,15 +231,15 @@ class TestSharpContext:
     def test_sharp_context_missing_patient_id_returns_none(self):
         from medassist.sharp.context import SharpContext
         headers = {
-            "x-sharp-fhir-url": "https://fhir.example.com",
+            "x-fhir-server-url": "https://fhir.example.com",
         }
         ctx = SharpContext.from_headers(headers)
         assert ctx is None
 
-    def test_sharp_context_minimal_headers(self):
+    def test_sharp_context_minimal_canonical_headers(self):
         from medassist.sharp.context import SharpContext
         headers = {
-            "x-sharp-patient-id": "patient-456",
+            "x-patient-id": "patient-456",
         }
         ctx = SharpContext.from_headers(headers)
         assert ctx is not None

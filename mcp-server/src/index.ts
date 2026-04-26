@@ -9,6 +9,7 @@ import pino from "pino";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpServer } from "./server.js";
 import { ENV } from "./config/env.js";
+import { runWithRequestHeaders } from "./auth/request-headers.js";
 import { FHIRClient } from "./fhir/client.js";
 import { patientSummary } from "./tools/patient-summary.js";
 import { checkDrugInteractions } from "./tools/drug-interaction.js";
@@ -77,7 +78,9 @@ app.post("/mcp", async (req, res) => {
     return;
   }
 
-  await transport.handleRequest(req, res, req.body);
+  await runWithRequestHeaders(req.headers, () =>
+    transport.handleRequest(req, res, req.body),
+  );
 });
 
 // ── MCP endpoint: GET /mcp (SSE stream) ─────────────────────────────────────
@@ -88,7 +91,7 @@ app.get("/mcp", async (req, res) => {
     return;
   }
   const transport = transports.get(sessionId)!;
-  await transport.handleRequest(req, res);
+  await runWithRequestHeaders(req.headers, () => transport.handleRequest(req, res));
 });
 
 // ── MCP endpoint: DELETE /mcp ───────────────────────────────────────────────

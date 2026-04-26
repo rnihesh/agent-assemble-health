@@ -8,6 +8,10 @@ from medassist.agents.patient_review import create_patient_review_agent
 from medassist.agents.medication_safety import create_medication_safety_agent
 from medassist.agents.risk_assessment import create_risk_assessment_agent
 from medassist.agents.preventive_care import create_preventive_care_agent
+from medassist.sharp.fhir_hook import (
+    build_sharp_header_provider,
+    extract_fhir_context,
+)
 
 ROOT_INSTRUCTION = """\
 You are **MedAssist**, a clinical decision support agent designed to assist healthcare
@@ -86,9 +90,24 @@ Examples of queries to handle directly:
 
 
 def create_root_agent() -> Agent:
-    """Create the root MedAssist orchestrator agent with all sub-agents."""
+    """Create the root MedAssist orchestrator agent with all sub-agents.
+
+    The toolset is configured with a ``header_provider`` that reads from
+    ADK session state on every outbound MCP call and emits canonical SHARP
+    headers (X-Patient-ID, X-FHIR-Server-URL, X-FHIR-Access-Token). The
+    session-state values are populated by ``extract_fhir_context``, the
+    ``before_model_callback`` bound below.
+
+    Mechanism: ``McpToolset.header_provider`` is the ADK-native extension
+    point. It accepts a ``Callable[[ReadonlyContext], Dict[str, str]]``
+    that runs synchronously per tool invocation and whose result is
+    forwarded to ``MCPSessionManager._merge_headers`` and on to the
+    streamablehttp client. This avoids subclassing or wrapping the HTTP
+    transport.
+    """
     mcp_tools = McpToolset(
-        connection_params=StreamableHTTPConnectionParams(url=MCP_SERVER_URL)
+        connection_params=StreamableHTTPConnectionParams(url=MCP_SERVER_URL),
+        header_provider=build_sharp_header_provider(),
     )
 
     patient_review_agent = create_patient_review_agent()
@@ -107,6 +126,7 @@ def create_root_agent() -> Agent:
             risk_assessment_agent,
             preventive_care_agent,
         ],
+        before_model_callback=extract_fhir_context,
     )
 
     return root_agent
