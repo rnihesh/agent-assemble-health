@@ -1,5 +1,35 @@
 # MedAssist Test Scenarios & Expected Outcomes
 
+## Live Demo Patients (HAPI Sandbox, Verified 2026-04-27)
+
+These three Synthea-generated patients live on the public `http://hapi.fhir.org/baseR4` sandbox and have rich clinical data verified against every MCP tool. Use them for the demo recording and any in-platform smoke test.
+
+| ID | Name | Sex / DOB / Age | Strengths | Use For |
+|---|---|---|---|---|
+| `6c4769e4-beda-5b20-3ba5-67e01c6daf03` | Mrs. Renata Considine | F / 1953-10-21 / 72 | 38 conditions (DM2, CKD-renal-transplant, HTN, hyperlipidemia, chronic pain), 37 medication requests, 554 observations, 15 immunizations | Polypharmacy + medication safety + clinical guideline matching |
+| `99dd324a-1a4e-f640-ab63-729bfd413be4` | Mr. Sal Pacocha | M / 1958-10-21 / 67 | 45 conditions, 27 medication requests, 580 observations, 13 immunizations | CHA2DS2-VASc / ASCVD risk scores + care gap analysis |
+| `3236e622-25fc-dfc3-70a3-f501faa674eb` | Mr. Trent Padberg | M / 1975-12-06 / 50 | 45 conditions, 6 medications, 189 observations, 15 immunizations | General patient review + interpret_lab_results + clinical_guidelines |
+
+### Verified tool outputs
+
+**Renata Considine (`6c4769e4-...`) → patient_summary** returns 22 active conditions including `Diabetes mellitus type 2` (1991), `Essential hypertension` (1991), `History of renal transplant` (2012), and a current Simvastatin 10mg prescription. Demographics resolve to age 72, female, Quincy MA address. Allergy section reports "No known allergies on record" — handled cleanly by the tool's empty-state. Lab section reports "No recent lab results" because the tool's lookback is 90 days and most observations are older — a real edge case for demo Q&A.
+
+**Sal Pacocha (`99dd324a-...`) → calculate_risk_score (CHA2DS2-VASc)** returns 2 / 9 (High risk), points from `Diabetes` and `Age 65–74`, with an explicit DOAC anticoagulation recommendation citing Lip GY 2010 Chest and the 2019 AHA/ACC/HRS guideline.
+
+**Sal Pacocha → identify_care_gaps** returns 21 gaps including USPSTF Grade A overdue colorectal cancer screening, tobacco use screening, and Grade B lung cancer LDCT, hepatitis B/C screening — all with priority labels and the guideline source.
+
+### Why these three
+
+- Cover three demo personas: complex elder polypharmacy, AFib-stroke-risk decision support, mid-life general review with rich condition history.
+- All three are deterministic Synthea outputs that should remain stable on HAPI for the recording window.
+- Combined they exercise every MCP tool against non-trivial data — no "no data found" empty-state demo.
+
+### Backup patient
+
+`example` (HAPI's well-known demo patient, "Aseel Mustafa") has thin data (no DOB, no gender, 1 condition). Use only as a fallback if the Synthea patients are scrubbed; risk scores compute to 0 which weakens the demo.
+
+---
+
 ## Test Patient 1: Complex Elderly (James Wilson, 72M)
 **File:** `mcp-server/tests/fixtures/fhir-bundles/complex-elderly-patient.json`
 
