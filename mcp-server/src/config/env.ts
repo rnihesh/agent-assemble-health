@@ -15,6 +15,9 @@ export const ENV = {
   PORT: parseInt(process.env.PORT ?? process.env.MCP_SERVER_PORT ?? "3001", 10),
   FHIR_BASE_URL: process.env.FHIR_BASE_URL ?? "http://hapi.fhir.org/baseR4",
   FHIR_ACCESS_TOKEN: process.env.FHIR_ACCESS_TOKEN ?? undefined,
+  AGENT_PUBLIC_URL:
+    process.env.AGENT_PUBLIC_URL ??
+    `http://localhost:${process.env.AGENT_PORT ?? "8001"}`,
   LOG_LEVEL: process.env.LOG_LEVEL ?? "info",
   OPENFDA_API_KEY: process.env.OPENFDA_API_KEY ?? undefined,
 } as const;

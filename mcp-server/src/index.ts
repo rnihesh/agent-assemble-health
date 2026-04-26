@@ -33,6 +33,10 @@ app.use(cors());
 app.use(express.json());
 
 // ── Static frontend ────────────────────────────────────────────────────────
+app.get("/", (_req, res) => {
+  res.redirect("/app");
+});
+
 app.use("/app", express.static(path.join(__dirname, "../../frontend")));
 
 // ── Session management ─────────────────────────────────────────────────────
@@ -106,6 +110,10 @@ function buildApiClient(): FHIRClient {
   return new FHIRClient(ENV.FHIR_BASE_URL, ENV.FHIR_ACCESS_TOKEN);
 }
 
+function buildAgentHealthUrl(): string {
+  return `${ENV.AGENT_PUBLIC_URL.replace(/\/+$/, "")}/health`;
+}
+
 async function checkFhirHealth(): Promise<Record<string, unknown>> {
   const metadataUrl = `${ENV.FHIR_BASE_URL.replace(/\/+$/, "")}/metadata`;
   const headers: Record<string, string> = {
@@ -143,6 +151,39 @@ async function checkFhirHealth(): Promise<Record<string, unknown>> {
     return {
       status: "unreachable",
       metadataUrl,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function checkAgentHealth(): Promise<Record<string, unknown>> {
+  const healthUrl = buildAgentHealthUrl();
+
+  try {
+    const response = await fetch(healthUrl, {
+      method: "GET",
+      signal: AbortSignal.timeout(5000),
+    });
+
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        status: "unhealthy",
+        healthUrl,
+        statusCode: response.status,
+        details: body,
+      };
+    }
+
+    return {
+      status: "ok",
+      healthUrl,
+      details: body,
+    };
+  } catch (error) {
+    return {
+      status: "unreachable",
+      healthUrl,
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -244,6 +285,30 @@ app.post("/api/clinical-guidelines", async (req, res) => {
   }
 });
 
+app.get("/api/system-status", async (_req, res) => {
+  const [fhir, agent] = await Promise.all([
+    checkFhirHealth(),
+    checkAgentHealth(),
+  ]);
+
+  const overallStatus =
+    fhir.status === "ok" && agent.status === "ok" ? "ok" : "degraded";
+
+  res.status(overallStatus === "ok" ? 200 : 503).json({
+    status: overallStatus,
+    checkedAt: new Date().toISOString(),
+    services: {
+      mcp: {
+        status: "ok",
+        activeSessions: transports.size,
+        port: ENV.PORT,
+      },
+      fhir,
+      agent,
+    },
+  });
+});
+
 // ── Health check ────────────────────────────────────────────────────────────
 app.get("/health", async (req, res) => {
   const deep =
@@ -289,6 +354,7 @@ app.listen(ENV.PORT, () => {
   logger.info(`  GET    http://localhost:${ENV.PORT}/health - Health check`);
   logger.info(`  GET    http://localhost:${ENV.PORT}/app    - Clinical dashboard`);
   logger.info("REST API:");
+  logger.info(`  GET    /api/system-status`);
   logger.info(`  POST   /api/patient-summary`);
   logger.info(`  POST   /api/drug-interactions`);
   logger.info(`  POST   /api/lab-results`);

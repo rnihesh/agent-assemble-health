@@ -4,7 +4,7 @@ MedAssist is a healthcare AI submission for the Agents Assemble challenge. It co
 
 - An MCP server with six clinical decision-support tools backed by FHIR
 - An A2A agent that routes clinician requests across specialist sub-agents
-- A lightweight dashboard for local demo and manual testing
+- A command-center dashboard for local demo, manual testing, and live stack visibility
 
 ## Current Status
 
@@ -12,11 +12,12 @@ Local code status as of March 15, 2026:
 
 - MCP server builds cleanly
 - MCP test suite passes: 161 tests
-- Agent test suite passes: 32 tests under Python 3.12
+- Agent test suite passes: 34 tests under Python 3.12
 - Agent entrypoint and packaging issues found during verification have been fixed
 - SHARP patient context now resolves across all patient-specific MCP tools
 - Agent card and agent health endpoints are implemented and verified locally
 - MCP and agent health endpoints have been verified together in a live local run
+- Dashboard UX has been upgraded with stack-status cards, scenario presets, request preview, and local run history
 
 Remaining submission work is mostly external or manual:
 
@@ -48,7 +49,7 @@ Prompt Opinion / EHR launch
 ```text
 agent/        Python A2A agent, sub-agents, SHARP middleware, agent card
 mcp-server/   TypeScript MCP server, FHIR client, clinical tools, tests
-frontend/     Dashboard served from the MCP server at /app
+frontend/     Command-center dashboard served from the MCP server at /app
 docs/         Plans, demo script, patient scenarios, project status
 scripts/      Setup, local startup, and Synthea data loading helpers
 ```
@@ -104,6 +105,7 @@ Verified in this workspace:
 - Live check of `/.well-known/agent-card.json` and `/health` on a local `uvicorn` instance
 - Live check of MCP `/health` and agent `/health` with both local services running
 - End-to-end helper verification with `./scripts/run-all.sh` and `./scripts/smoke-test.sh`
+- Browser validation of the `/app` dashboard flow, including scenario staging, stack refresh, and successful analysis rendering
 
 ## Deployment Assets
 
@@ -124,4 +126,5 @@ Not yet verified here:
 
 - Demo flow: [docs/demo-script.md](/Users/nihesh/Nihesh/agent-assemble-health/docs/demo-script.md)
 - Patient scenarios: [docs/test-scenarios.md](/Users/nihesh/Nihesh/agent-assemble-health/docs/test-scenarios.md)
+- Startup guide: [docs/startup.md](/Users/nihesh/Nihesh/agent-assemble-health/docs/startup.md)
 - Consolidated status: [docs/project-status.md](/Users/nihesh/Nihesh/agent-assemble-health/docs/project-status.md)

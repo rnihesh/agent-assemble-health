@@ -3,7 +3,7 @@
 ## What Is Done
 
 - MCP server is implemented with six clinical tools and passing automated tests.
-- Frontend dashboard is in place and served by the MCP server.
+- Frontend command-center dashboard is in place and served by the MCP server.
 - A2A agent structure, sub-agents, SHARP middleware, and agent card are present.
 - Agent startup defects found in review have been fixed:
   - `MCP_SERVER_URL` is now imported correctly in the agent entrypoint.
@@ -16,6 +16,7 @@
 - SHARP patient context support is now consistent across patient-specific MCP tools.
 - Repo-root `.env` loading now works for both services and helper scripts.
 - Dockerfiles, Compose, and a smoke-test script are now present for deployment/readiness workflows.
+- Dashboard polish now includes live MCP / agent / FHIR status cards, one-click demo runway presets, explicit invocation preview, and local result history with restore / rerun support.
 
 ## What Was Verified Locally
 
@@ -29,6 +30,7 @@
 - MCP and agent health endpoints were validated together with both local services running.
 - MCP deep health supports optional FHIR metadata connectivity checks.
 - `run-all.sh` and `smoke-test.sh` were validated together for the default local workflow.
+- Browser validation confirmed the refreshed `/app` experience, including scenario staging and successful result rendering.
 
 ## What Is Still Left
 
