@@ -8,8 +8,11 @@ MedAssist is a healthcare clinical decision support system built for the Prompt 
 
 ## What's verified (as of 2026-04-27)
 
-- MCP server compiles clean with TypeScript strict; **209 Vitest tests** passing across 13 suites.
-- Agent test suite (`pytest`) passes 69 tests; ADK packaging clean under Python 3.12.
+- MCP server compiles clean with TypeScript strict; **229 Vitest tests** passing across 16 suites.
+- Agent test suite (`pytest`) passes **69 tests**; ADK packaging clean under Python 3.12.
+- **Live A2A → MCP → FHIR → LLM chain verified end-to-end** with `gemini-2.5-flash` driving the agent and NOWBIND/`gpt-4o` driving the `differential_diagnosis` tool.
+- **PHI guardrail** refuses any FHIR_BASE_URL outside the synthetic-data allowlist (configurable via `ALLOWED_FHIR_HOSTS`; opt-out via `PHI_GUARD=off`).
+- **MCP session-lifecycle bug** that would have made every Prompt Opinion `tools/list` call return `400 Invalid or expired session` — fixed and regression-protected.
 - MCP `initialize` advertises the canonical `ai.promptopinion/fhir-context` extension with the SMART scopes the eight tools need.
 - A2A agent card is A2A v1 schema (`supportedInterfaces[]`, typed `securitySchemes`, `capabilities.extensions`).
 - SHARP context flows end-to-end via canonical headers (`X-Patient-ID`, `X-FHIR-Server-URL`, `X-FHIR-Access-Token`) — the wire format the platform actually uses.
@@ -49,7 +52,7 @@ Prompt Opinion / EHR launch
 
 ## Tools
 
-The MCP server exposes eight clinical tools:
+The MCP server exposes nine clinical tools — six rule-based, two LLM-powered, one orchestrator:
 
 | Tool | Type | Purpose |
 |------|------|---------|
@@ -60,6 +63,7 @@ The MCP server exposes eight clinical tools:
 | `identify_care_gaps` | rule-based | USPSTF screenings, CDC immunizations, condition-specific monitoring per guideline |
 | `match_clinical_guidelines` | rule-based | ADA, ACC/AHA, GOLD, GINA, KDIGO targets matched against patient observations |
 | `differential_diagnosis` | **LLM** | Ranked differential with cited supporting / contradicting findings + recommended next steps. NOWBIND (Azure) by default; OpenAI fallback. |
+| `draft_soap_note` | **LLM** | Drafts a four-part SOAP note (Subjective / Objective / Assessment / Plan) grounded in the patient record. Cited findings preserved through the LLM call. |
 | `clinical_handoff` | orchestrator | Composes patient_summary + lab interpretation + drug interactions + care gaps + auto-selected risk scores into a single shift-handoff document |
 
 The agent orchestrates four specialist workflows that pick from these tools as needed:
@@ -89,7 +93,7 @@ The dashboard renders these as compact tokens (`Condition/…c65c1410`) with the
 
 Optional helpers:
 
-- `npm test --prefix mcp-server` — 209 Vitest tests.
+- `npm test --prefix mcp-server` — 229 Vitest tests.
 - `cd agent && ./venv/bin/pytest` — 69 agent tests.
 - `npm run eval --prefix mcp-server` — regenerates [docs/eval-results.md](docs/eval-results.md).
 - `./scripts/smoke-test.sh` — verifies MCP + agent health endpoints.
