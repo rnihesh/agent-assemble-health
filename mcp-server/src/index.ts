@@ -54,9 +54,17 @@ app.post("/mcp", async (req, res) => {
     // Re-use existing transport for this session
     transport = transports.get(sessionId)!;
   } else if (!sessionId) {
-    // New session: create transport + server
+    // New session: create transport + server. The sessionId is allocated
+    // inside handleRequest when the inbound payload is `initialize`, so we
+    // register the transport via the SDK's onsessioninitialized callback —
+    // checking transport.sessionId before handleRequest runs always reads
+    // undefined, which silently dropped subsequent requests.
     transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sid) => {
+        transports.set(sid, transport);
+        logger.info({ sessionId: sid }, "MCP session created");
+      },
     });
 
     transport.onclose = () => {
@@ -69,11 +77,6 @@ app.post("/mcp", async (req, res) => {
 
     const mcpServer = createMcpServer();
     await mcpServer.connect(transport);
-
-    if (transport.sessionId) {
-      transports.set(transport.sessionId, transport);
-      logger.info({ sessionId: transport.sessionId }, "MCP session created");
-    }
   } else {
     // sessionId provided but not found
     res.status(400).json({ error: "Invalid or expired session" });
