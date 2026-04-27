@@ -45,22 +45,22 @@ export async function clinicalHandoff(
   const age = getPatientAge(patient);
   const sex = getPatientSex(patient);
 
-  // Run the four primary tools sequentially. The public HAPI sandbox
-  // rate-limits aggressive parallel bursts (24+ FHIR GETs at once), and
-  // shift-handoff use is latency-tolerant. Going serial trades ~6s of
-  // wall time for reliability on demo day.
-  const summary = await patientSummary(client, {
-    patientId: input.patientId,
-    sections: ["conditions", "medications", "allergies", "vitals"],
-  });
-  const labs = await interpretLabResults(client, {
-    patientId: input.patientId,
-    lookbackDays,
-  });
-  const interactions = await checkDrugInteractions(client, {
-    patientId: input.patientId,
-  });
-  const gaps = await identifyCareGaps(client, { patientId: input.patientId });
+  // Run the four primary tools in parallel. HAPI's public sandbox 429s on
+  // aggressive bursts of 20+ FHIR GETs; the FHIR client's retry-on-429
+  // (see src/fhir/client.ts) absorbs that without surfacing the failure.
+  // Typical wall-time: ~6-10s; sequential was ~36s.
+  const [summary, labs, interactions, gaps] = await Promise.all([
+    patientSummary(client, {
+      patientId: input.patientId,
+      sections: ["conditions", "medications", "allergies", "vitals"],
+    }),
+    interpretLabResults(client, {
+      patientId: input.patientId,
+      lookbackDays,
+    }),
+    checkDrugInteractions(client, { patientId: input.patientId }),
+    identifyCareGaps(client, { patientId: input.patientId }),
+  ]);
 
   // Pick risk calculators based on conditions.
   let riskBlock = "";

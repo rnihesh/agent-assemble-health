@@ -38,12 +38,24 @@ export class FHIRClient {
   }
 
   private async request<T>(url: string): Promise<T> {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: this.buildHeaders(),
-    });
+    // Retry on 429 (rate limit) with backoff. Public sandboxes like HAPI
+    // throttle aggressive parallel bursts; the orchestration tools fan out
+    // many resource queries per invocation. Two retries with 600ms / 1500ms
+    // backoff turn most rate-limit errors into a slightly-slower success
+    // rather than a user-visible failure.
+    const RETRY_DELAYS_MS = [600, 1500];
+    let lastError: FHIRError | undefined;
 
-    if (!res.ok) {
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: this.buildHeaders(),
+      });
+
+      if (res.ok) {
+        return (await res.json()) as T;
+      }
+
       let outcome: OperationOutcome | undefined;
       try {
         const body = await res.json();
@@ -54,10 +66,19 @@ export class FHIRClient {
         // ignore parse errors
       }
       const msg = outcome?.issue?.[0]?.diagnostics ?? `FHIR request failed: ${res.status} ${res.statusText}`;
-      throw new FHIRError(msg, res.status, outcome);
+      lastError = new FHIRError(msg, res.status, outcome);
+
+      // Only retry on transient errors. 429 is a hard signal; 503 / 504 are
+      // worth a second look. Anything else should fail fast.
+      const transient = res.status === 429 || res.status === 503 || res.status === 504;
+      if (!transient || attempt >= RETRY_DELAYS_MS.length) {
+        throw lastError;
+      }
+      await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
     }
 
-    return (await res.json()) as T;
+    // Unreachable, but type-checker wants it.
+    throw lastError ?? new FHIRError("FHIR request failed", 500);
   }
 
   /**
