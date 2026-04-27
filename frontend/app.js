@@ -109,6 +109,28 @@
       validationMessage:
         "Stage a patient or enter a condition (for example, diabetes) to match guidelines.",
     },
+    "soap-note": {
+      label: "SOAP Note",
+      lede:
+        "LLM-powered SOAP note draft. Takes a visit reason and optional clinician notes, grounds in the patient's longitudinal record, and returns a Subjective / Objective / Assessment / Plan starting point for clinician edit.",
+      endpoint: "/api/soap-note",
+      requiresPatient: true,
+      fields: ["visit-reason", "clinician-notes"],
+      loading: "Drafting SOAP note from the patient record",
+      buildBody(ctx) {
+        const body = { patientId: ctx.patientId };
+        if (ctx.visitReason) body.visitReason = ctx.visitReason.trim();
+        if (ctx.clinicianNotes) body.clinicianNotes = ctx.clinicianNotes.trim();
+        return body;
+      },
+      validate(body) {
+        return (
+          typeof body.visitReason === "string" && body.visitReason.length > 0
+        );
+      },
+      validationMessage:
+        "Enter a visit reason, e.g. \"3-month diabetes follow-up\".",
+    },
     "clinical-handoff": {
       label: "Shift Handoff",
       lede:
@@ -229,6 +251,8 @@
       "condition": document.querySelector('[data-field="condition"]'),
       "chief-complaint": document.querySelector('[data-field="chief-complaint"]'),
       "additional-context": document.querySelector('[data-field="additional-context"]'),
+      "visit-reason": document.querySelector('[data-field="visit-reason"]'),
+      "clinician-notes": document.querySelector('[data-field="clinician-notes"]'),
     },
     medList: $("med-list"),
     lookback: $("lookback-days"),
@@ -236,6 +260,8 @@
     condition: $("condition"),
     chiefComplaint: $("chief-complaint"),
     additionalContext: $("additional-context"),
+    visitReason: $("visit-reason"),
+    clinicianNotes: $("clinician-notes"),
     runBtn: $("run-btn"),
     resetBtn: $("reset-btn"),
     retryBtn: $("retry-btn"),
@@ -300,6 +326,8 @@
     refs.condition.addEventListener("input", saveDraft);
     refs.chiefComplaint.addEventListener("input", saveDraft);
     refs.additionalContext.addEventListener("input", saveDraft);
+    refs.visitReason.addEventListener("input", saveDraft);
+    refs.clinicianNotes.addEventListener("input", saveDraft);
 
     refs.copyBtn.addEventListener("click", copyResult);
     refs.downloadBtn.addEventListener("click", downloadResult);
@@ -521,6 +549,8 @@
       condition: refs.condition.value.trim(),
       chiefComplaint: refs.chiefComplaint.value,
       additionalContext: refs.additionalContext.value.trim(),
+      visitReason: refs.visitReason.value,
+      clinicianNotes: refs.clinicianNotes.value,
     };
   }
 
@@ -672,6 +702,10 @@
       refs.chiefComplaint.value = scenario.prefill.chiefComplaint;
     if (scenario.prefill && scenario.prefill.additionalContext !== undefined)
       refs.additionalContext.value = scenario.prefill.additionalContext;
+    if (scenario.prefill && scenario.prefill.visitReason !== undefined)
+      refs.visitReason.value = scenario.prefill.visitReason;
+    if (scenario.prefill && scenario.prefill.clinicianNotes !== undefined)
+      refs.clinicianNotes.value = scenario.prefill.clinicianNotes;
     closeScenarios();
     saveDraft();
     toast("Scenario loaded — " + scenario.title);
@@ -840,6 +874,8 @@
           condition: refs.condition.value.trim(),
           chiefComplaint: refs.chiefComplaint.value,
           additionalContext: refs.additionalContext.value.trim(),
+          visitReason: refs.visitReason.value,
+          clinicianNotes: refs.clinicianNotes.value,
         })
       );
     } catch (_) {}
@@ -858,6 +894,8 @@
       if (typeof draft.condition === "string") refs.condition.value = draft.condition;
       if (typeof draft.chiefComplaint === "string") refs.chiefComplaint.value = draft.chiefComplaint;
       if (typeof draft.additionalContext === "string") refs.additionalContext.value = draft.additionalContext;
+      if (typeof draft.visitReason === "string") refs.visitReason.value = draft.visitReason;
+      if (typeof draft.clinicianNotes === "string") refs.clinicianNotes.value = draft.clinicianNotes;
     } catch (_) {}
   }
 

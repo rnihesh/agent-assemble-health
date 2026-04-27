@@ -13,6 +13,7 @@ import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
 import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 import { clinicalHandoff } from "./tools/clinical-handoff.js";
+import { draftSoapNote } from "./tools/soap-note.js";
 
 /**
  * MCP capability declaration for the Prompt Opinion FHIR-context extension.
@@ -531,6 +532,65 @@ export function createMcpServer(): McpServer {
             {
               type: "text",
               text: `Error generating clinical handoff: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // ── draft_soap_note ──────────────────────────────────────────────────────
+  server.tool(
+    "draft_soap_note",
+    "LLM-powered SOAP note drafter. Takes a visit reason and optional clinician subjective notes, grounds in the patient's longitudinal FHIR record, and returns a draft Subjective / Objective / Assessment / Plan note for clinician edit. Uses an OpenAI-compatible LLM (NOWBIND default, OpenAI fallback) configured via the MCP server's environment. This is a starting point for documentation, not a finalized clinical note.",
+    {
+      patientId: z
+        .string()
+        .optional()
+        .describe(
+          "FHIR Patient ID. Optional when provided via SHARP launch context in _meta.",
+        ),
+      visitReason: z
+        .string()
+        .describe(
+          "Why the patient is presenting today, e.g. \"3-month diabetes follow-up\" or \"acute on chronic low back pain\".",
+        ),
+      clinicianNotes: z
+        .string()
+        .optional()
+        .describe(
+          "Optional clinician-supplied subjective notes — additional history, ROS, exam highlights — to include in the prompt.",
+        ),
+    },
+    async (params, extra) => {
+      try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        const client = buildClient(extra?._meta);
+        const text = await draftSoapNote(client, {
+          patientId: pid,
+          visitReason: params.visitReason,
+          clinicianNotes: params.clinicianNotes,
+        });
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error drafting SOAP note: ${err instanceof Error ? err.message : String(err)}`,
             },
           ],
           isError: true,

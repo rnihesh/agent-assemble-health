@@ -107,7 +107,7 @@ describe("MCP session lifecycle", () => {
     expect(list.text, "tools/list must succeed with the issued session id").not.toContain(
       "Invalid or expired session",
     );
-    // All eight registered tools must appear by name.
+    // All nine registered tools must appear by name.
     for (const name of [
       "patient_summary",
       "check_drug_interactions",
@@ -117,6 +117,7 @@ describe("MCP session lifecycle", () => {
       "match_clinical_guidelines",
       "differential_diagnosis",
       "clinical_handoff",
+      "draft_soap_note",
     ]) {
       expect(list.text, `tools/list must include ${name}`).toContain(`"name":"${name}"`);
     }

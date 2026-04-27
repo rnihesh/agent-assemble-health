@@ -20,6 +20,7 @@ import { identifyCareGaps } from "./tools/care-gap-identifier.js";
 import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
 import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 import { clinicalHandoff } from "./tools/clinical-handoff.js";
+import { draftSoapNote } from "./tools/soap-note.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -297,6 +298,30 @@ app.post("/api/clinical-guidelines", async (req, res) => {
   }
 });
 
+app.post("/api/soap-note", async (req, res) => {
+  try {
+    const { patientId, visitReason, clinicianNotes } = req.body;
+    if (!patientId) {
+      res.status(400).json({ error: "Provide patientId" });
+      return;
+    }
+    if (!visitReason || typeof visitReason !== "string" || visitReason.trim().length === 0) {
+      res.status(400).json({ error: "Provide visitReason as a non-empty string" });
+      return;
+    }
+    const client = buildApiClient();
+    const result = await draftSoapNote(client, {
+      patientId,
+      visitReason,
+      clinicianNotes,
+    });
+    res.json({ result });
+  } catch (err) {
+    logger.error(err, "soap-note API error");
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.post("/api/clinical-handoff", async (req, res) => {
   try {
     const { patientId, lookbackDays, includeRiskScores } = req.body;
@@ -419,4 +444,5 @@ app.listen(ENV.PORT, () => {
   logger.info(`  POST   /api/clinical-guidelines`);
   logger.info(`  POST   /api/differential-diagnosis`);
   logger.info(`  POST   /api/clinical-handoff`);
+  logger.info(`  POST   /api/soap-note`);
 });

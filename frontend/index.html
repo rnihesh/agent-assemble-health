@@ -105,6 +105,9 @@
           <li class="rail__item">
             <button type="button" data-tool="clinical-handoff">Shift Handoff</button>
           </li>
+          <li class="rail__item">
+            <button type="button" data-tool="soap-note">SOAP Note</button>
+          </li>
         </ul>
       </nav>
 
@@ -156,6 +159,18 @@
               <label for="additional-context">Additional context (optional)</label>
               <input type="text" id="additional-context" placeholder="Recent travel, family history, exposures, etc." />
               <p class="helper">Anything that should refine the differential.</p>
+            </div>
+
+            <div class="field" data-field="visit-reason" hidden>
+              <label for="visit-reason">Visit reason</label>
+              <input type="text" id="visit-reason" placeholder="3-month diabetes follow-up; acute on chronic LBP; new patient intake…" />
+              <p class="helper">Why is the patient here today?</p>
+            </div>
+
+            <div class="field" data-field="clinician-notes" hidden>
+              <label for="clinician-notes">Clinician subjective notes (optional)</label>
+              <textarea id="clinician-notes" rows="3" placeholder="ROS, exam highlights, anything the patient said that should land in S…"></textarea>
+              <p class="helper">Goes into the prompt as additional Subjective material.</p>
             </div>
 
             <div class="actions">
