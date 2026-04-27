@@ -3,6 +3,7 @@ import { z } from "zod";
 import { FHIRClient } from "./fhir/client.js";
 import { ENV } from "./config/env.js";
 import { resolveSharpContext } from "./auth/sharp-context.js";
+import { assertSyntheticFhirUrl } from "./auth/phi-guard.js";
 import { getCurrentRequestHeaders } from "./auth/request-headers.js";
 import { patientSummary } from "./tools/patient-summary.js";
 import { checkDrugInteractions } from "./tools/drug-interaction.js";
@@ -46,6 +47,8 @@ function buildClient(meta: unknown): FHIRClient {
   const sharp = resolveSharpContext(getCurrentRequestHeaders(), meta);
   const baseUrl = sharp?.fhirServerUrl ?? ENV.FHIR_BASE_URL;
   const token = sharp?.fhirAccessToken ?? ENV.FHIR_ACCESS_TOKEN;
+  // PHI guardrail — applies whether the URL came from SHARP context or env.
+  assertSyntheticFhirUrl(baseUrl);
   return new FHIRClient(baseUrl, token);
 }
 

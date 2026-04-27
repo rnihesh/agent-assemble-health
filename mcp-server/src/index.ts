@@ -9,6 +9,7 @@ import pino from "pino";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpServer } from "./server.js";
 import { ENV } from "./config/env.js";
+import { assertSyntheticFhirUrl } from "./auth/phi-guard.js";
 import { runWithRequestHeaders } from "./auth/request-headers.js";
 import { FHIRClient } from "./fhir/client.js";
 import { patientSummary } from "./tools/patient-summary.js";
@@ -115,6 +116,9 @@ app.delete("/mcp", async (req, res) => {
 // ── REST API endpoints (for frontend dashboard) ────────────────────────────
 
 function buildApiClient(): FHIRClient {
+  // PHI guardrail — refuses to call a host that isn't on the synthetic-data
+  // allowlist. See src/auth/phi-guard.ts for the policy.
+  assertSyntheticFhirUrl(ENV.FHIR_BASE_URL);
   return new FHIRClient(ENV.FHIR_BASE_URL, ENV.FHIR_ACCESS_TOKEN);
 }
 
