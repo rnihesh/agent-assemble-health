@@ -3,7 +3,7 @@
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
-from medassist.config import MCP_SERVER_URL
+from medassist.config import MCP_SERVER_URL, AGENT_MODEL
 
 RISK_ASSESSMENT_INSTRUCTION = """\
 You are a **Clinical Risk Assessment Specialist** within the MedAssist clinical decision
@@ -95,7 +95,7 @@ def create_risk_assessment_agent() -> Agent:
 
     return Agent(
         name="risk_assessment",
-        model="gemini-2.0-flash",
+        model=AGENT_MODEL,
         instruction=RISK_ASSESSMENT_INSTRUCTION,
         tools=[mcp_tools],
     )

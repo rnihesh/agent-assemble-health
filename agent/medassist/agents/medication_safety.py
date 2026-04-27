@@ -3,7 +3,7 @@
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
-from medassist.config import MCP_SERVER_URL
+from medassist.config import MCP_SERVER_URL, AGENT_MODEL
 
 MEDICATION_SAFETY_INSTRUCTION = """\
 You are a **Medication Safety Specialist** within the MedAssist clinical decision support system.
@@ -97,7 +97,7 @@ def create_medication_safety_agent() -> Agent:
 
     return Agent(
         name="medication_safety",
-        model="gemini-2.0-flash",
+        model=AGENT_MODEL,
         instruction=MEDICATION_SAFETY_INSTRUCTION,
         tools=[mcp_tools],
     )

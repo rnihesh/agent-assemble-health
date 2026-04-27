@@ -3,7 +3,7 @@
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
-from medassist.config import MCP_SERVER_URL
+from medassist.config import MCP_SERVER_URL, AGENT_MODEL
 
 PATIENT_REVIEW_INSTRUCTION = """\
 You are a **Patient Review Specialist** within the MedAssist clinical decision support system.
@@ -89,7 +89,7 @@ def create_patient_review_agent() -> Agent:
 
     return Agent(
         name="patient_review",
-        model="gemini-2.0-flash",
+        model=AGENT_MODEL,
         instruction=PATIENT_REVIEW_INSTRUCTION,
         tools=[mcp_tools],
     )

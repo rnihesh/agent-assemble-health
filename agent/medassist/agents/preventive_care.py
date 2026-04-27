@@ -3,7 +3,7 @@
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
-from medassist.config import MCP_SERVER_URL
+from medassist.config import MCP_SERVER_URL, AGENT_MODEL
 
 PREVENTIVE_CARE_INSTRUCTION = """\
 You are a **Preventive Care Specialist** within the MedAssist clinical decision support system.
@@ -98,7 +98,7 @@ def create_preventive_care_agent() -> Agent:
 
     return Agent(
         name="preventive_care",
-        model="gemini-2.0-flash",
+        model=AGENT_MODEL,
         instruction=PREVENTIVE_CARE_INSTRUCTION,
         tools=[mcp_tools],
     )

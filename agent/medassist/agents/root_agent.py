@@ -3,7 +3,7 @@
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 
-from medassist.config import MCP_SERVER_URL
+from medassist.config import MCP_SERVER_URL, AGENT_MODEL
 from medassist.agents.patient_review import create_patient_review_agent
 from medassist.agents.medication_safety import create_medication_safety_agent
 from medassist.agents.risk_assessment import create_risk_assessment_agent
@@ -117,7 +117,7 @@ def create_root_agent() -> Agent:
 
     root_agent = Agent(
         name="medassist",
-        model="gemini-2.0-flash",
+        model=AGENT_MODEL,
         instruction=ROOT_INSTRUCTION,
         tools=[mcp_tools],
         sub_agents=[

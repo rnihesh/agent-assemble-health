@@ -43,6 +43,10 @@ class TestConfig:
 
     def test_google_api_key_defaults_empty(self, monkeypatch):
         monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+        # Stub load_dotenv at the source so a repo-root .env (which may
+        # legitimately hold a GOOGLE_API_KEY for live runs) doesn't bleed
+        # in during the importlib.reload.
+        monkeypatch.setattr("dotenv.load_dotenv", lambda *a, **k: False)
         import importlib
         import medassist.config as cfg
         importlib.reload(cfg)
@@ -147,7 +151,10 @@ class TestAgentStructure:
         from medassist.agents.root_agent import create_root_agent
         agent = create_root_agent()
         assert agent.name == "medassist"
-        assert agent.model == "gemini-2.0-flash"
+        # Model is configurable via AGENT_MODEL env (defaults to a Gemini
+        # variant). Assert it's a non-empty string rather than pinning a
+        # specific version, so model swaps don't churn the test suite.
+        assert isinstance(agent.model, str) and len(agent.model) > 0
 
     def test_root_agent_has_sub_agents(self):
         from medassist.agents.root_agent import create_root_agent
@@ -166,7 +173,10 @@ class TestAgentStructure:
         from medassist.agents.patient_review import create_patient_review_agent
         agent = create_patient_review_agent()
         assert agent.name == "patient_review"
-        assert agent.model == "gemini-2.0-flash"
+        # Model is configurable via AGENT_MODEL env (defaults to a Gemini
+        # variant). Assert it's a non-empty string rather than pinning a
+        # specific version, so model swaps don't churn the test suite.
+        assert isinstance(agent.model, str) and len(agent.model) > 0
         assert agent.instruction is not None
         assert len(agent.instruction) > 100
 
@@ -174,7 +184,10 @@ class TestAgentStructure:
         from medassist.agents.medication_safety import create_medication_safety_agent
         agent = create_medication_safety_agent()
         assert agent.name == "medication_safety"
-        assert agent.model == "gemini-2.0-flash"
+        # Model is configurable via AGENT_MODEL env (defaults to a Gemini
+        # variant). Assert it's a non-empty string rather than pinning a
+        # specific version, so model swaps don't churn the test suite.
+        assert isinstance(agent.model, str) and len(agent.model) > 0
         assert agent.instruction is not None
         assert len(agent.instruction) > 100
 
@@ -182,7 +195,10 @@ class TestAgentStructure:
         from medassist.agents.risk_assessment import create_risk_assessment_agent
         agent = create_risk_assessment_agent()
         assert agent.name == "risk_assessment"
-        assert agent.model == "gemini-2.0-flash"
+        # Model is configurable via AGENT_MODEL env (defaults to a Gemini
+        # variant). Assert it's a non-empty string rather than pinning a
+        # specific version, so model swaps don't churn the test suite.
+        assert isinstance(agent.model, str) and len(agent.model) > 0
         assert agent.instruction is not None
         assert len(agent.instruction) > 100
 
@@ -190,7 +206,10 @@ class TestAgentStructure:
         from medassist.agents.preventive_care import create_preventive_care_agent
         agent = create_preventive_care_agent()
         assert agent.name == "preventive_care"
-        assert agent.model == "gemini-2.0-flash"
+        # Model is configurable via AGENT_MODEL env (defaults to a Gemini
+        # variant). Assert it's a non-empty string rather than pinning a
+        # specific version, so model swaps don't churn the test suite.
+        assert isinstance(agent.model, str) and len(agent.model) > 0
         assert agent.instruction is not None
         assert len(agent.instruction) > 100
 
