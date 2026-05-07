@@ -1,0 +1,10 @@
+{
+  "result": "# Drug Interaction Check Report\n\n**Medications Evaluated:** Simvastatin 10 MG Oral Tablet\n\n## Patient Medications (from FHIR)\n- Simvastatin 10 MG Oral Tablet `MedicationRequest/6c4769e4-beda-5b20-8001-f11b19440ed3`\n\n## Summary\nNo significant drug-drug interactions, allergy conflicts, or therapeutic duplications were identified based on available data.\n\n*Note: This does not replace clinical judgement. Some interactions may not be captured in reference databases.*",
+  "_snapshot": {
+    "tool": "drug-interactions",
+    "patientId": "6c4769e4-beda-5b20-3ba5-67e01c6daf03",
+    "patientNick": "considine",
+    "capturedAt": "2026-05-07T03:35:56.022Z",
+    "mcpVersion": "snapshot"
+  }
+}

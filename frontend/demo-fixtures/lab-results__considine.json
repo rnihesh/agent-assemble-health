@@ -1,0 +1,10 @@
+{
+  "result": "# Lab Results Interpretation\n\nNo laboratory results found in the last 90 days for this patient.",
+  "_snapshot": {
+    "tool": "lab-results",
+    "patientId": "6c4769e4-beda-5b20-3ba5-67e01c6daf03",
+    "patientNick": "considine",
+    "capturedAt": "2026-05-07T03:35:58.062Z",
+    "mcpVersion": "snapshot"
+  }
+}

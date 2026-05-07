@@ -300,6 +300,7 @@
     resultPatient: $("result-patient"),
     resultRuntime: $("result-runtime"),
     resultTime: $("result-time"),
+    resultSnapshotBadge: $("result-snapshot-badge"),
     copyBtn: $("copy-btn"),
     downloadBtn: $("download-btn"),
     status: $("status"),
@@ -485,14 +486,39 @@
     refs.runBtn.disabled = true;
     const startedAt = performance.now();
 
+    let snapshotServed = false;
     try {
-      const response = await fetch(API_BASE + tool.endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      let response;
+      let data;
+      try {
+        response = await fetch(API_BASE + tool.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        data = await response.json().catch(() => ({}));
+      } catch (netErr) {
+        // Network-level failure (MCP unreachable). Try a snapshot.
+        const snap = await loadSnapshot(state.activeTool, body.patientId);
+        if (snap) {
+          data = snap;
+          response = { ok: true, status: 200 };
+          snapshotServed = true;
+        } else {
+          throw netErr;
+        }
+      }
 
-      const data = await response.json().catch(() => ({}));
+      // If the server responded but with a 5xx and we have a snapshot,
+      // prefer the snapshot (HAPI flake / FHIR rate-limit safety net).
+      if (response.status >= 500 && !snapshotServed && body.patientId) {
+        const snap = await loadSnapshot(state.activeTool, body.patientId);
+        if (snap) {
+          data = snap;
+          response = { ok: true, status: 200 };
+          snapshotServed = true;
+        }
+      }
 
       // Treat "patient not known/found" as an empty-state, not a server error.
       const notFoundLike =
@@ -541,6 +567,7 @@
         body,
         runtimeMs,
         completedAt,
+        snapshotServed,
       };
       state.lastResult = { markdown: data.result, meta };
       renderResult(data.result, meta);
@@ -551,6 +578,26 @@
       });
     } catch (err) {
       const offline = !navigator.onLine;
+      // Last-ditch snapshot fallback even after the catch path.
+      if (body.patientId) {
+        const snap = await loadSnapshot(state.activeTool, body.patientId);
+        if (snap && snap.result) {
+          const runtimeMs = Math.round(performance.now() - startedAt);
+          const completedAt = new Date().toISOString();
+          const meta = {
+            toolId: state.activeTool,
+            toolLabel: tool.label,
+            patientId: body.patientId,
+            body,
+            runtimeMs,
+            completedAt,
+            snapshotServed: true,
+          };
+          state.lastResult = { markdown: snap.result, meta };
+          renderResult(snap.result, meta);
+          return;
+        }
+      }
       showError(
         "Couldn't run " + tool.label,
         offline
@@ -590,10 +637,34 @@
       : "No patient";
     refs.resultRuntime.textContent = meta.runtimeMs + " ms";
     refs.resultTime.textContent = formatTime(meta.completedAt);
+    if (refs.resultSnapshotBadge) {
+      refs.resultSnapshotBadge.hidden = !meta.snapshotServed;
+    }
     setMode("result");
     try {
       refs.note.focus({ preventScroll: true });
     } catch (_) {}
+  }
+
+  // Snapshot fallback: when a live tool call fails, look for a pre-captured
+  // response in /demo-fixtures/<tool>__<nick>.json. Match by patientId via a
+  // small lookup table (the three demo patients are frozen in
+  // docs/test-scenarios.md). Returns null when no snapshot exists.
+  const SNAPSHOT_NICKS = {
+    "6c4769e4-beda-5b20-3ba5-67e01c6daf03": "considine",
+    "99dd324a-1a4e-f640-ab63-729bfd413be4": "pacocha",
+    "3236e622-25fc-dfc3-70a3-f501faa674eb": "padberg",
+  };
+  async function loadSnapshot(toolId, patientId) {
+    const nick = SNAPSHOT_NICKS[patientId];
+    if (!nick) return null;
+    try {
+      const res = await fetch("demo-fixtures/" + toolId + "__" + nick + ".json");
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (_) {
+      return null;
+    }
   }
 
   function showError(title, copy) {

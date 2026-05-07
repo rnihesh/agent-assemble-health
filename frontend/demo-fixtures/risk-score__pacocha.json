@@ -1,0 +1,10 @@
+{
+  "result": "# CHA2DS2-VASc Score for Atrial Fibrillation Stroke Risk\n*Estimates stroke risk in patients with non-valvular atrial fibrillation to guide anticoagulation therapy decisions.*\n\n**Patient:** Mr. Kelvin159 Sal878 Pacocha935 | Age: 67 | Sex: Male\n\n## Score: 2 / 9\n**Risk Category:** High\n\n## Variables Used\n| Variable | Value | Source | Points |\n|----------|-------|--------|--------|\n| Congestive Heart Failure | false | FHIR | 0 |\n| Hypertension | false | FHIR | 0 |\n| Age >= 75 | false | FHIR | 0 |\n| Diabetes | true | FHIR | 1 |\n| Stroke/TIA/Thromboembolism | false | FHIR | 0 |\n| Vascular Disease | false | FHIR | 0 |\n| Age 65-74 | true | FHIR | 1 |\n| Sex: Female | false | FHIR | 0 |\n\n## Interpretation\nA CHA2DS2-VASc score of 2 places this patient in the High risk category for stroke in the setting of atrial fibrillation.\n\n## Clinical Recommendation\nOral anticoagulation is recommended. Direct oral anticoagulants (DOACs) are generally preferred over warfarin unless contraindicated (e.g., mechanical heart valve, moderate-severe mitral stenosis).\n\n## References\n- Lip GY, et al. Chest. 2010;137(2):263-272.\n- January CT, et al. 2019 AHA/ACC/HRS Focused Update. Circulation. 2019;140(2):e125-e151.\n\n*This score is for clinical decision support and should be interpreted in the context of the full clinical picture.*",
+  "_snapshot": {
+    "tool": "risk-score",
+    "patientId": "99dd324a-1a4e-f640-ab63-729bfd413be4",
+    "patientNick": "pacocha",
+    "capturedAt": "2026-05-07T03:36:44.247Z",
+    "mcpVersion": "snapshot"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "result": "# Drug Interaction Check Report\n\n**Medications Evaluated:** Chlorpheniramine Maleate 2 MG/ML Oral Solution\n\n## Patient Medications (from FHIR)\n- Chlorpheniramine Maleate 2 MG/ML Oral Solution `MedicationRequest/3236e622-25fc-dfc3-d451-5cb5d404490b`\n\n## Summary\nNo significant drug-drug interactions, allergy conflicts, or therapeutic duplications were identified based on available data.\n\n*Note: This does not replace clinical judgement. Some interactions may not be captured in reference databases.*",
+  "_snapshot": {
+    "tool": "drug-interactions",
+    "patientId": "3236e622-25fc-dfc3-70a3-f501faa674eb",
+    "patientNick": "padberg",
+    "capturedAt": "2026-05-07T03:37:18.515Z",
+    "mcpVersion": "snapshot"
+  }
+}

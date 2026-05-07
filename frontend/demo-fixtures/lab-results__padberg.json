@@ -1,0 +1,10 @@
+{
+  "result": "# Lab Results Interpretation\n\nNo laboratory results found in the last 90 days for this patient.",
+  "_snapshot": {
+    "tool": "lab-results",
+    "patientId": "3236e622-25fc-dfc3-70a3-f501faa674eb",
+    "patientNick": "padberg",
+    "capturedAt": "2026-05-07T03:37:20.509Z",
+    "mcpVersion": "snapshot"
+  }
+}

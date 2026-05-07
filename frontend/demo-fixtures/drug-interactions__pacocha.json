@@ -1,0 +1,10 @@
+{
+  "result": "# Drug Interaction Check Report\n\n**Medications Evaluated:** Simvastatin 10 MG Oral Tablet, Simvastatin 20 MG Oral Tablet, Clopidogrel 75 MG Oral Tablet, Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray, 24 HR metoprolol succinate 100 MG Extended Release Oral Tablet\n\n## Patient Medications (from FHIR)\n- Simvastatin 10 MG Oral Tablet `MedicationRequest/99dd324a-1a4e-f640-d1f8-34413537716e`\n- Simvastatin 20 MG Oral Tablet `MedicationRequest/99dd324a-1a4e-f640-6e89-27688ae391a9`\n- Clopidogrel 75 MG Oral Tablet `MedicationRequest/99dd324a-1a4e-f640-f6b8-27cc196b0a42`\n- Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray `MedicationRequest/99dd324a-1a4e-f640-2bc8-619a1c0cf62d`\n- 24 HR metoprolol succinate 100 MG Extended Release Oral Tablet `MedicationRequest/99dd324a-1a4e-f640-b4cf-7e34a301c0d7`\n\n## Summary\nNo significant drug-drug interactions, allergy conflicts, or therapeutic duplications were identified based on available data.\n\n*Note: This does not replace clinical judgement. Some interactions may not be captured in reference databases.*",
+  "_snapshot": {
+    "tool": "drug-interactions",
+    "patientId": "99dd324a-1a4e-f640-ab63-729bfd413be4",
+    "patientNick": "pacocha",
+    "capturedAt": "2026-05-07T03:36:38.409Z",
+    "mcpVersion": "snapshot"
+  }
+}
