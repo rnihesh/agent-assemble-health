@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { FHIRClient, FHIRError } from '../src/fhir/client.js';
+import { FHIRClient, FHIRError, clearFhirCache } from '../src/fhir/client.js';
 
 // Mock the global fetch
 const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  // Cache contamination across tests breaks "fetch called N times" assertions.
+  clearFhirCache();
 });
 
 afterEach(() => {
@@ -263,23 +265,27 @@ describe('FHIRClient - pagination', () => {
   });
 
   it('respects maxPages limit', async () => {
-    const makeBundle = (id: string) => ({
+    // Each page has a unique "next" URL so the per-URL cache doesn't
+    // collapse the pagination chain into a single hit.
+    let pageNum = 0;
+    const makeBundle = (id: string, hasNext: boolean) => ({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: { resourceType: 'Condition', id } }],
-      link: [
-        { relation: 'next', url: `http://fhir.example.com/r4/Condition?page=next` },
-      ],
+      link: hasNext
+        ? [{ relation: 'next', url: `http://fhir.example.com/r4/Condition?page=${pageNum + 1}` }]
+        : [],
     });
 
     let callCount = 0;
     globalThis.fetch = vi.fn().mockImplementation(async () => {
       callCount++;
+      pageNum++;
       return {
         ok: true,
         status: 200,
         statusText: 'OK',
-        json: vi.fn().mockResolvedValue(makeBundle(`c${callCount}`)),
+        json: vi.fn().mockResolvedValue(makeBundle(`c${callCount}`, true)),
       };
     }) as unknown as typeof fetch;
 

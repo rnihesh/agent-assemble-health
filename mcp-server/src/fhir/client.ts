@@ -16,6 +16,37 @@ export class FHIRError extends Error {
   }
 }
 
+interface CacheEntry {
+  value: unknown;
+  expiresAt: number;
+}
+
+/**
+ * Process-global TTL cache for FHIR GETs. Keys are auth-aware (different
+ * tokens are different cache keys) so multi-tenant access stays isolated.
+ *
+ * The orchestration tools (clinical_handoff, the dashboard's parallel runs)
+ * issue many overlapping FHIR queries within a few seconds; without this
+ * cache, public HAPI 429s us during demo. TTL is short enough that any
+ * server-side update lands within seconds of being relevant.
+ *
+ * Disabled when FHIR_CACHE=off, or when TTL_MS is set to 0.
+ */
+const FHIR_CACHE = new Map<string, CacheEntry>();
+
+/** Test-only — clears the cache between unit tests. */
+export function clearFhirCache(): void {
+  FHIR_CACHE.clear();
+}
+
+function cacheTtlMs(): number {
+  if ((process.env.FHIR_CACHE ?? "on").toLowerCase() === "off") return 0;
+  const env = process.env.FHIR_CACHE_TTL_MS;
+  if (env === undefined) return 30_000;
+  const n = Number(env);
+  return Number.isFinite(n) && n >= 0 ? n : 30_000;
+}
+
 export class FHIRClient {
   private readonly baseUrl: string;
   private readonly accessToken?: string;
@@ -24,6 +55,10 @@ export class FHIRClient {
     // Remove trailing slash for consistency
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.accessToken = accessToken;
+  }
+
+  private cacheKey(url: string): string {
+    return `${this.accessToken ?? ""}::${url}`;
   }
 
   private buildHeaders(): Record<string, string> {
@@ -38,6 +73,19 @@ export class FHIRClient {
   }
 
   private async request<T>(url: string): Promise<T> {
+    // Cache hit fast path. Expired entries are evicted on read.
+    const ttl = cacheTtlMs();
+    const key = this.cacheKey(url);
+    if (ttl > 0) {
+      const hit = FHIR_CACHE.get(key);
+      if (hit) {
+        if (hit.expiresAt > Date.now()) {
+          return hit.value as T;
+        }
+        FHIR_CACHE.delete(key);
+      }
+    }
+
     // Retry on 429 (rate limit) with backoff. Public sandboxes like HAPI
     // throttle aggressive parallel bursts; the orchestration tools fan out
     // many resource queries per invocation. Two retries with 600ms / 1500ms
@@ -53,7 +101,11 @@ export class FHIRClient {
       });
 
       if (res.ok) {
-        return (await res.json()) as T;
+        const value = (await res.json()) as T;
+        if (ttl > 0) {
+          FHIR_CACHE.set(key, { value, expiresAt: Date.now() + ttl });
+        }
+        return value;
       }
 
       let outcome: OperationOutcome | undefined;
