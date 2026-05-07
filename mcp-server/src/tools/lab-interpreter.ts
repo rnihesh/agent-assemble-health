@@ -122,10 +122,11 @@ export async function interpretLabResults(
     for (const t of significantTrends) {
       const arrow =
         t.direction === "improving" ? "Improving" : t.direction === "worsening" ? "WORSENING" : "Stable";
+      const sparkline = renderSparkline(t.values.map((v) => v.value));
       const valueList = t.values
         .map((v) => `${v.value} (${formatDate(v.date)})`)
         .join(" -> ");
-      parts.push(`- **${t.name}:** ${arrow} -- ${valueList}`);
+      parts.push(`- **${t.name}:** ${arrow} \`${sparkline}\` -- ${valueList}`);
     }
     parts.push("");
   }
@@ -161,6 +162,27 @@ export async function interpretLabResults(
 }
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Render a Unicode sparkline for a series of numeric values. Uses the
+ * eight block-fill characters (▁▂▃▄▅▆▇█) so a clinician scanning the
+ * trend section sees the shape at a glance — the prose value list still
+ * follows for the actual numbers. Two or fewer values render as flat.
+ */
+function renderSparkline(values: number[]): string {
+  if (values.length < 2) return "—";
+  const blocks = "▁▂▃▄▅▆▇█";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
+  if (range === 0) return blocks[3].repeat(values.length);
+  return values
+    .map((v) => {
+      const idx = Math.round(((v - min) / range) * (blocks.length - 1));
+      return blocks[idx];
+    })
+    .join("");
+}
 
 function interpretLabs(
   labs: Observation[],
