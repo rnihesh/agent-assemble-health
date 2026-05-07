@@ -1,10 +1,21 @@
 # MedAssist
 
-MedAssist is a healthcare clinical decision support system built for the Prompt Opinion **Agents Assemble** challenge. It combines:
+> Clinical decision support where every AI claim links back to a FHIR resource.
 
-- An **MCP server** with eight clinical tools — six rule-based, one LLM-powered, one orchestration tool — every clinical claim cited back to its source FHIR resource so a clinician can audit the chain.
-- An **A2A agent** (Google ADK) that routes clinician requests across four specialist sub-agents and propagates SHARP context end-to-end.
-- A **clinical workbench** dashboard at `/app` with editorial-clinical typography, single-surface flow, and one-click demo scenarios against verified Synthea patients.
+MedAssist is a healthcare clinical decision support system built for the Prompt Opinion **Agents Assemble** challenge. The hackathon asks you to build either a Superpower (MCP) or a Full Agent (A2A) — MedAssist ships both, and the AI's reasoning is auditable line-by-line because every clinical claim carries its source FHIR resource id inline.
+
+- An **MCP server** with **nine clinical tools** — six rule-based, two LLM-powered, one orchestrator. Every emitted claim cites its source FHIR resource.
+- An **A2A agent** (Google ADK + `to_a2a`) routing clinician requests across four specialist sub-agents, propagating SHARP context end-to-end via canonical headers.
+- A **clinical workbench** dashboard at `/app` — editorial-clinical typography, single-surface flow, one-click demo scenarios against verified Synthea patients.
+
+## 30-second tour (the demo arc)
+
+1. Clinician opens the MedAssist agent inside Prompt Opinion. SHARP context (patient id + FHIR token) flows in via the A2A FHIR-context extension.
+2. Clinician asks for a **shift handoff**. The orchestrator tool composes patient summary + abnormal labs + drug interactions + open care gaps + applicable risk scores into one structured read with a numbered action list.
+3. Same patient, new chief complaint: *"72F, progressive fatigue and bilateral edema over 6 weeks."* The **`differential_diagnosis`** tool reasons over her actual longitudinal record and returns 5 ranked candidates (CHF, CKD progression, nephrotic syndrome, cirrhosis, hypothyroidism) — each with supporting findings cited as `Condition/<id>` references the clinician can click to audit.
+4. Every clinical claim across every tool — deterministic and LLM alike — carries the same FHIR resource references. A clinician can trace any answer back to the chart.
+
+That's the AI Factor + Potential Impact + Feasibility story, in three beats.
 
 ## What's verified (as of 2026-04-27)
 
@@ -24,7 +35,36 @@ What's left is external: deploy, register in the marketplace, record demo, submi
 
 ## Architecture
 
+```mermaid
+flowchart TB
+    PO["Prompt Opinion workspace<br/>(EHR launch)"]
+    Agent["MedAssist A2A Agent<br/>Google ADK + to_a2a — port 8001<br/>4 specialist sub-agents"]
+    MCP["MedAssist MCP Server<br/>TypeScript + StreamableHTTP — port 3001<br/>9 clinical tools + dashboard"]
+    FHIR[("FHIR R4 server<br/>default: hapi.fhir.org/baseR4")]
+    Ext["RxNorm + OpenFDA<br/>NOWBIND or OpenAI<br/>(LLM-powered tools)"]
+    Dash["Clinical Workbench<br/>/app"]
+
+    PO -->|"A2A message<br/>metadata.fhir-context"| Agent
+    Agent -->|"before_model_callback<br/>→ ADK session state"| Agent
+    Agent -->|"HTTP /mcp<br/>X-Patient-ID, X-FHIR-Server-URL,<br/>X-FHIR-Access-Token"| MCP
+    Dash -->|"REST /api/*"| MCP
+    MCP -->|"FHIR R4"| FHIR
+    MCP -.->|"optional"| Ext
+
+    style PO fill:#F4EFE6,stroke:#1A1814,color:#1A1814
+    style Agent fill:#1A1814,stroke:#1A1814,color:#F4EFE6
+    style MCP fill:#1A1814,stroke:#1A1814,color:#F4EFE6
+    style FHIR fill:#F4EFE6,stroke:#1A1814,color:#1A1814
+    style Ext fill:#F4EFE6,stroke:#1A1814,color:#1A1814,stroke-dasharray: 4 2
+    style Dash fill:#F4EFE6,stroke:#B23A48,color:#1A1814
 ```
+
+The wire-level flow: Prompt Opinion sends an A2A `message/send` with FHIR-context metadata → agent's `before_model_callback` extracts `fhirUrl` + `fhirToken` + `patientId` into ADK session state → the root agent picks a specialist sub-agent → the sub-agent's `McpToolset` invokes a tool, with `header_provider` injecting canonical SHARP HTTP headers from session state → MCP's Express middleware reads the canonical headers → the tool fetches FHIR resources → result Markdown flows back through the chain. End-to-end live-verified.
+
+<details>
+<summary>Architecture as text (for non-Mermaid renderers)</summary>
+
+```text
 Prompt Opinion / EHR launch
         |
         | A2A message metadata: { fhirUrl, fhirToken, patientId }
@@ -39,7 +79,7 @@ Prompt Opinion / EHR launch
         v
   MedAssist MCP Server  (TypeScript + StreamableHTTP, port 3001)
    ├─ Express middleware reads canonical SHARP headers (case-insensitive)
-   ├─ Eight tools (see below)
+   ├─ Nine tools (see below)
    ├─ Dashboard served at /app
    └─ Status aggregator at /api/system-status
         |
@@ -49,6 +89,8 @@ Prompt Opinion / EHR launch
         + optional RxNorm, OpenFDA
         + optional NOWBIND/Azure or OpenAI for differential_diagnosis
 ```
+
+</details>
 
 ## Tools
 
