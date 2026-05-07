@@ -112,15 +112,16 @@
     "soap-note": {
       label: "SOAP Note",
       lede:
-        "LLM-powered SOAP note draft. Takes a visit reason and optional clinician notes, grounds in the patient's longitudinal record, and returns a Subjective / Objective / Assessment / Plan starting point for clinician edit.",
+        "LLM-powered SOAP note draft. Takes a visit reason and optional clinician notes, grounds in the patient's longitudinal record, and returns a Subjective / Objective / Assessment / Plan starting point for clinician edit. Optional language for non-English documentation.",
       endpoint: "/api/soap-note",
       requiresPatient: true,
-      fields: ["visit-reason", "clinician-notes"],
+      fields: ["visit-reason", "clinician-notes", "soap-language"],
       loading: "Drafting SOAP note from the patient record",
       buildBody(ctx) {
         const body = { patientId: ctx.patientId };
         if (ctx.visitReason) body.visitReason = ctx.visitReason.trim();
         if (ctx.clinicianNotes) body.clinicianNotes = ctx.clinicianNotes.trim();
+        if (ctx.soapLanguage) body.language = ctx.soapLanguage.trim();
         return body;
       },
       validate(body) {
@@ -130,6 +131,21 @@
       },
       validationMessage:
         "Enter a visit reason, e.g. \"3-month diabetes follow-up\".",
+    },
+    "patient-friendly-summary": {
+      label: "Patient-Friendly Summary",
+      lede:
+        "LLM-powered plain-language version of the patient summary. Strips clinical jargon, hides the FHIR audit trail, and ends with a gentle 'what this means for you' paragraph framed as information, not medical advice. Configurable language and reading level.",
+      endpoint: "/api/patient-friendly-summary",
+      requiresPatient: true,
+      fields: ["pf-language", "pf-reading-level"],
+      loading: "Translating the chart into plain language",
+      buildBody(ctx) {
+        const body = { patientId: ctx.patientId };
+        if (ctx.pfLanguage) body.language = ctx.pfLanguage.trim();
+        if (ctx.pfReadingLevel) body.readingLevel = ctx.pfReadingLevel.trim();
+        return body;
+      },
     },
     "clinical-handoff": {
       label: "Shift Handoff",
@@ -253,6 +269,9 @@
       "additional-context": document.querySelector('[data-field="additional-context"]'),
       "visit-reason": document.querySelector('[data-field="visit-reason"]'),
       "clinician-notes": document.querySelector('[data-field="clinician-notes"]'),
+      "soap-language": document.querySelector('[data-field="soap-language"]'),
+      "pf-language": document.querySelector('[data-field="pf-language"]'),
+      "pf-reading-level": document.querySelector('[data-field="pf-reading-level"]'),
     },
     medList: $("med-list"),
     lookback: $("lookback-days"),
@@ -262,6 +281,9 @@
     additionalContext: $("additional-context"),
     visitReason: $("visit-reason"),
     clinicianNotes: $("clinician-notes"),
+    soapLanguage: $("soap-language"),
+    pfLanguage: $("pf-language"),
+    pfReadingLevel: $("pf-reading-level"),
     runBtn: $("run-btn"),
     resetBtn: $("reset-btn"),
     retryBtn: $("retry-btn"),
@@ -551,6 +573,9 @@
       additionalContext: refs.additionalContext.value.trim(),
       visitReason: refs.visitReason.value,
       clinicianNotes: refs.clinicianNotes.value,
+      soapLanguage: refs.soapLanguage.value,
+      pfLanguage: refs.pfLanguage.value,
+      pfReadingLevel: refs.pfReadingLevel.value,
     };
   }
 

@@ -14,6 +14,7 @@ import { matchClinicalGuidelines } from "./tools/guideline-matcher.js";
 import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 import { clinicalHandoff } from "./tools/clinical-handoff.js";
 import { draftSoapNote } from "./tools/soap-note.js";
+import { patientFriendlySummary } from "./tools/patient-friendly-summary.js";
 
 /**
  * MCP capability declaration for the Prompt Opinion FHIR-context extension.
@@ -540,6 +541,65 @@ export function createMcpServer(): McpServer {
     },
   );
 
+  // ── patient_friendly_summary ─────────────────────────────────────────────
+  server.tool(
+    "patient_friendly_summary",
+    "LLM-powered patient-facing summary. Takes the same FHIR-backed patient summary the clinician sees and rewrites it in plain language at a configurable reading level (default 6th grade) and language (default English). Strips clinical jargon, drops the FHIR resource references that are a clinician audit trail, and ends with a gentle 'what this means for you' paragraph framed as information, not medical advice.",
+    {
+      patientId: z
+        .string()
+        .optional()
+        .describe(
+          "FHIR Patient ID. Optional when provided via SHARP launch context in _meta.",
+        ),
+      language: z
+        .string()
+        .optional()
+        .describe(
+          "Output language (e.g. 'Spanish', 'Hindi', 'es'). Defaults to English.",
+        ),
+      readingLevel: z
+        .string()
+        .optional()
+        .describe(
+          "Target reading level (e.g. '4th grade', '8th grade'). Defaults to 6th grade.",
+        ),
+    },
+    async (params, extra) => {
+      try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+        const client = buildClient(extra?._meta);
+        const text = await patientFriendlySummary(client, {
+          patientId: pid,
+          language: params.language,
+          readingLevel: params.readingLevel,
+        });
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error generating patient-friendly summary: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
   // ── draft_soap_note ──────────────────────────────────────────────────────
   server.tool(
     "draft_soap_note",
@@ -562,6 +622,12 @@ export function createMcpServer(): McpServer {
         .describe(
           "Optional clinician-supplied subjective notes — additional history, ROS, exam highlights — to include in the prompt.",
         ),
+      language: z
+        .string()
+        .optional()
+        .describe(
+          "Output language for the SOAP sections (e.g. 'Spanish', 'Hindi'). Defaults to English.",
+        ),
     },
     async (params, extra) => {
       try {
@@ -583,6 +649,7 @@ export function createMcpServer(): McpServer {
           patientId: pid,
           visitReason: params.visitReason,
           clinicianNotes: params.clinicianNotes,
+          language: params.language,
         });
         return { content: [{ type: "text", text }] };
       } catch (err) {

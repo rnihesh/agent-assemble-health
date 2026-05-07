@@ -108,6 +108,9 @@
           <li class="rail__item">
             <button type="button" data-tool="soap-note">SOAP Note</button>
           </li>
+          <li class="rail__item">
+            <button type="button" data-tool="patient-friendly-summary">Patient-Friendly Summary</button>
+          </li>
         </ul>
       </nav>
 
@@ -171,6 +174,24 @@
               <label for="clinician-notes">Clinician subjective notes (optional)</label>
               <textarea id="clinician-notes" rows="3" placeholder="ROS, exam highlights, anything the patient said that should land in S…"></textarea>
               <p class="helper">Goes into the prompt as additional Subjective material.</p>
+            </div>
+
+            <div class="field" data-field="soap-language" hidden>
+              <label for="soap-language">SOAP language (optional)</label>
+              <input type="text" id="soap-language" placeholder="English (default), Spanish, Hindi…" />
+              <p class="helper">The four SOAP sections render in this language.</p>
+            </div>
+
+            <div class="field" data-field="pf-language" hidden>
+              <label for="pf-language">Language</label>
+              <input type="text" id="pf-language" placeholder="English (default), Spanish, Hindi…" />
+              <p class="helper">Language the patient prefers.</p>
+            </div>
+
+            <div class="field" data-field="pf-reading-level" hidden>
+              <label for="pf-reading-level">Reading level</label>
+              <input type="text" id="pf-reading-level" placeholder="6th grade (default), 4th grade, 8th grade…" />
+              <p class="helper">Lower for accessibility, higher for medically literate readers.</p>
             </div>
 
             <div class="actions">

@@ -12,6 +12,13 @@ export interface SoapNoteInput {
   visitReason: string;
   /** Optional clinician-supplied subjective notes / additional context. */
   clinicianNotes?: string;
+  /**
+   * Optional. ISO 639-1 code or language name (e.g. "es", "Spanish",
+   * "Hindi"). Defaults to English. The four SOAP sections are written in
+   * this language; the document headers stay English so a clinician can
+   * still scan the structure.
+   */
+  language?: string;
 }
 
 interface LLMSoapResponse {
@@ -125,6 +132,14 @@ export async function draftSoapNote(
 
 function buildUserPrompt(input: SoapNoteInput, summary: string): string {
   const parts: string[] = [];
+  const language = (input.language ?? "English").trim() || "English";
+  if (language.toLowerCase() !== "english") {
+    parts.push(`# Output language`);
+    parts.push(
+      `Write the four SOAP-section values in ${language}. Keep the JSON keys (subjective / objective / assessment / plan) and any FHIR resource references like \`Condition/abc-123\` exactly as they are.`,
+    );
+    parts.push("");
+  }
   parts.push(`# Visit Reason`);
   parts.push(input.visitReason.trim());
   parts.push("");
@@ -147,6 +162,9 @@ function renderMarkdown(
   lines.push("# SOAP Note (draft)");
   lines.push("");
   lines.push(`**Visit Reason:** ${input.visitReason.trim()}`);
+  if (input.language && input.language.trim().toLowerCase() !== "english") {
+    lines.push(`**Language:** ${input.language.trim()}`);
+  }
   lines.push(`**Generated:** ${new Date().toISOString()}`);
   lines.push("");
 
