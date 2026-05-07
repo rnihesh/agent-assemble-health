@@ -195,6 +195,10 @@
       endpoint: "/api/differential-diagnosis",
       requiresPatient: true,
       fields: ["chief-complaint", "additional-context"],
+      // After a result, expose a Refine box. Submitting appends the
+      // follow-up to the additionalContext field and re-runs.
+      supportsRefine: true,
+      refineMergeField: "additionalContext",
       loading: "Reasoning over the patient's record against the chief complaint",
       buildBody(ctx) {
         const body = { patientId: ctx.patientId };
@@ -332,6 +336,10 @@
     resultRuntime: $("result-runtime"),
     resultTime: $("result-time"),
     resultSnapshotBadge: $("result-snapshot-badge"),
+    refine: $("refine"),
+    refineInput: $("refine-input"),
+    refineBtn: $("refine-btn"),
+    refineClear: $("refine-clear"),
     copyBtn: $("copy-btn"),
     downloadBtn: $("download-btn"),
     status: $("status"),
@@ -426,6 +434,93 @@
     refs.patientInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") run();
     });
+
+    if (refs.refineBtn) refs.refineBtn.addEventListener("click", refine);
+    if (refs.refineClear)
+      refs.refineClear.addEventListener("click", () => {
+        if (refs.refineInput) refs.refineInput.value = "";
+      });
+    if (refs.refineInput) {
+      refs.refineInput.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") refine();
+      });
+    }
+  }
+
+  // Refine takes the last result's input body, appends the refinement note
+  // to the configured merge field, and re-runs the same tool.
+  async function refine() {
+    const last = state.lastResult;
+    if (!last || !last.meta) return;
+    const tool = TOOLS[last.meta.toolId];
+    if (!tool || !tool.supportsRefine) return;
+    const note = (refs.refineInput.value || "").trim();
+    if (!note) return;
+
+    const field = tool.refineMergeField || "additionalContext";
+    const priorBody = { ...last.meta.body };
+    const priorNote = priorBody[field] ? String(priorBody[field]).trim() : "";
+    priorBody[field] = priorNote
+      ? priorNote + "\nFollow-up: " + note
+      : "Follow-up: " + note;
+
+    // Mirror the body back into the configure inputs so the user can see
+    // what's being sent and edit further if needed.
+    if (field === "additionalContext" && refs.additionalContext) {
+      refs.additionalContext.value = priorBody.additionalContext;
+    }
+
+    // Reuse the same render path by faking a "live" run from the prior
+    // tool config but with the merged body.
+    selectTool(last.meta.toolId, { quiet: true });
+    refs.runBtn.disabled = true;
+    setMode("running");
+    refs.runningCopy.textContent =
+      typeof tool.loadingFor === "function"
+        ? tool.loadingFor({})
+        : tool.loading;
+
+    const startedAt = performance.now();
+    try {
+      const response = await fetch(API_BASE + tool.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(priorBody),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.result) {
+        showError(
+          "Refine failed",
+          data.error || "The MCP server returned " + response.status + ".",
+        );
+        return;
+      }
+      const runtimeMs = Math.round(performance.now() - startedAt);
+      const completedAt = new Date().toISOString();
+      const meta = {
+        toolId: last.meta.toolId,
+        toolLabel: tool.label,
+        patientId: priorBody.patientId || "",
+        body: priorBody,
+        runtimeMs,
+        completedAt,
+        refined: true,
+      };
+      state.lastResult = { markdown: data.result, meta };
+      renderResult(data.result, meta);
+      persistHistory({
+        id: completedAt + ":" + last.meta.toolId,
+        ...meta,
+        markdown: data.result,
+      });
+    } catch (err) {
+      showError(
+        "Refine failed",
+        "The MCP server didn't respond. Try again or rerun from configure.",
+      );
+    } finally {
+      refs.runBtn.disabled = false;
+    }
   }
 
   // ── Tool selection ────────────────────────────────────────────────────────
@@ -671,6 +766,14 @@
     refs.resultTime.textContent = formatTime(meta.completedAt);
     if (refs.resultSnapshotBadge) {
       refs.resultSnapshotBadge.hidden = !meta.snapshotServed;
+    }
+    // Show the Refine box only for tools that opt in. Each render hides
+    // any pending refinement input from the previous run.
+    const tool = TOOLS[meta.toolId];
+    if (refs.refine) {
+      const showRefine = !!(tool && tool.supportsRefine);
+      refs.refine.hidden = !showRefine;
+      if (showRefine && refs.refineInput) refs.refineInput.value = "";
     }
     setMode("result");
     try {

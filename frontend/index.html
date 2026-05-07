@@ -241,6 +241,15 @@
               </div>
             </header>
             <article class="note" id="note" tabindex="-1"></article>
+            <section class="refine" id="refine" hidden>
+              <h3 class="refine__title">Refine</h3>
+              <p class="refine__copy">Add a fact or change a variable. The same tool re-runs with the new context.</p>
+              <textarea id="refine-input" rows="2" placeholder="What if her potassium is actually 5.5? · What if she's on ibuprofen too? · What if symptoms started 2 weeks earlier?"></textarea>
+              <div class="actions">
+                <button type="button" class="btn btn--primary" id="refine-btn">Refine</button>
+                <button type="button" class="btn btn--ghost" id="refine-clear">Clear</button>
+              </div>
+            </section>
             <footer class="document__footer">
               <button type="button" class="btn btn--quiet" id="copy-btn">Copy as note</button>
               <button type="button" class="btn btn--ghost" id="download-btn">Download .md</button>

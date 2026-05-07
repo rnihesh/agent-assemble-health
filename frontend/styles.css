@@ -735,6 +735,44 @@ textarea {
   cursor: help;
 }
 
+.refine {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--ink-200);
+}
+
+.refine__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0 0 var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+.refine__copy {
+  color: var(--ink-700);
+  font-size: 0.95rem;
+  margin: 0 0 var(--space-3);
+}
+
+.refine textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  padding: var(--space-3);
+  border: 1px solid var(--ink-300);
+  background: var(--bone-50);
+  color: var(--ink-900);
+  border-radius: var(--radius-1);
+  resize: vertical;
+  min-height: 4rem;
+}
+
+.refine textarea:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 1px;
+}
+
 .note pre {
   font-family: var(--font-mono);
   font-size: var(--type-mono);
