@@ -132,6 +132,35 @@
       validationMessage:
         "Enter a visit reason, e.g. \"3-month diabetes follow-up\".",
     },
+    "next-best-test": {
+      label: "Next Best Test",
+      lede:
+        "LLM-powered 'what should we order next'. Reasons over the patient's record + chief complaint + optional working differential, returns a top recommended test plus 2–4 alternatives, each with rationale and what positive vs. negative results would change.",
+      endpoint: "/api/next-best-test",
+      requiresPatient: true,
+      fields: ["chief-complaint", "nbt-candidates"],
+      loading: "Reasoning about which test would maximally narrow the differential",
+      buildBody(ctx) {
+        const body = { patientId: ctx.patientId };
+        if (ctx.chiefComplaint) body.chiefComplaint = ctx.chiefComplaint.trim();
+        if (ctx.nbtCandidates) {
+          const list = ctx.nbtCandidates
+            .split(/\r?\n/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          if (list.length) body.candidates = list;
+        }
+        return body;
+      },
+      validate(body) {
+        return (
+          typeof body.chiefComplaint === "string" &&
+          body.chiefComplaint.length > 0
+        );
+      },
+      validationMessage:
+        "Enter a chief complaint, e.g. \"72F fatigue and edema\".",
+    },
     "patient-friendly-summary": {
       label: "Patient-Friendly Summary",
       lede:
@@ -272,6 +301,7 @@
       "soap-language": document.querySelector('[data-field="soap-language"]'),
       "pf-language": document.querySelector('[data-field="pf-language"]'),
       "pf-reading-level": document.querySelector('[data-field="pf-reading-level"]'),
+      "nbt-candidates": document.querySelector('[data-field="nbt-candidates"]'),
     },
     medList: $("med-list"),
     lookback: $("lookback-days"),
@@ -284,6 +314,7 @@
     soapLanguage: $("soap-language"),
     pfLanguage: $("pf-language"),
     pfReadingLevel: $("pf-reading-level"),
+    nbtCandidates: $("nbt-candidates"),
     runBtn: $("run-btn"),
     resetBtn: $("reset-btn"),
     retryBtn: $("retry-btn"),
@@ -623,6 +654,7 @@
       soapLanguage: refs.soapLanguage.value,
       pfLanguage: refs.pfLanguage.value,
       pfReadingLevel: refs.pfReadingLevel.value,
+      nbtCandidates: refs.nbtCandidates.value,
     };
   }
 

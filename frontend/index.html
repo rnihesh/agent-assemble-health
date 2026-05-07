@@ -111,6 +111,9 @@
           <li class="rail__item">
             <button type="button" data-tool="patient-friendly-summary">Patient-Friendly Summary</button>
           </li>
+          <li class="rail__item">
+            <button type="button" data-tool="next-best-test">Next Best Test</button>
+          </li>
         </ul>
       </nav>
 
@@ -192,6 +195,12 @@
               <label for="pf-reading-level">Reading level</label>
               <input type="text" id="pf-reading-level" placeholder="6th grade (default), 4th grade, 8th grade…" />
               <p class="helper">Lower for accessibility, higher for medically literate readers.</p>
+            </div>
+
+            <div class="field" data-field="nbt-candidates" hidden>
+              <label for="nbt-candidates">Working differential (optional, one per line)</label>
+              <textarea id="nbt-candidates" rows="3" placeholder="CHF&#10;CKD progression&#10;Nephrotic syndrome"></textarea>
+              <p class="helper">When provided, the LLM ranks tests by how much each one narrows this candidate set.</p>
             </div>
 
             <div class="actions">

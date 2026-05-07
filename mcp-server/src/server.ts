@@ -15,6 +15,7 @@ import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 import { clinicalHandoff } from "./tools/clinical-handoff.js";
 import { draftSoapNote } from "./tools/soap-note.js";
 import { patientFriendlySummary } from "./tools/patient-friendly-summary.js";
+import { nextBestTest } from "./tools/next-best-test.js";
 
 /**
  * MCP capability declaration for the Prompt Opinion FHIR-context extension.
@@ -473,6 +474,64 @@ export function createMcpServer(): McpServer {
             {
               type: "text",
               text: `Error generating differential diagnosis: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // ── next_best_test ───────────────────────────────────────────────────────
+  server.tool(
+    "next_best_test",
+    "LLM-powered 'what should we order next' recommendation. Takes a chief complaint and optional working differential, grounds in the patient's longitudinal record, and returns a top recommended test plus 2–4 alternatives. Each test ships with rationale, expected discrimination value (High/Medium/Low), and what positive vs. negative results would change in management. The model is asked to favor tests that narrow the candidate set, not just confirm the most likely diagnosis.",
+    {
+      patientId: z
+        .string()
+        .optional()
+        .describe(
+          "FHIR Patient ID. Optional when provided via SHARP launch context in _meta.",
+        ),
+      chiefComplaint: z
+        .string()
+        .describe(
+          "The presenting concern (clinician shorthand is fine).",
+        ),
+      candidates: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Optional working differential — when provided the LLM ranks tests by how much each narrows this candidate set.",
+        ),
+    },
+    async (params, extra) => {
+      try {
+        const pid = resolvePatientId(params.patientId, extra?._meta);
+        if (!pid) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "Please provide a patientId or include SHARP patient context in _meta.",
+              },
+            ],
+            isError: true,
+          };
+        }
+        const client = buildClient(extra?._meta);
+        const text = await nextBestTest(client, {
+          patientId: pid,
+          chiefComplaint: params.chiefComplaint,
+          candidates: params.candidates,
+        });
+        return { content: [{ type: "text", text }] };
+      } catch (err) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error generating next-best-test recommendation: ${err instanceof Error ? err.message : String(err)}`,
             },
           ],
           isError: true,

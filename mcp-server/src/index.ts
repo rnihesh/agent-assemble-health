@@ -22,6 +22,7 @@ import { differentialDiagnosis } from "./tools/differential-diagnosis.js";
 import { clinicalHandoff } from "./tools/clinical-handoff.js";
 import { draftSoapNote } from "./tools/soap-note.js";
 import { patientFriendlySummary } from "./tools/patient-friendly-summary.js";
+import { nextBestTest } from "./tools/next-best-test.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -324,6 +325,30 @@ app.post("/api/soap-note", async (req, res) => {
   }
 });
 
+app.post("/api/next-best-test", async (req, res) => {
+  try {
+    const { patientId, chiefComplaint, candidates } = req.body;
+    if (!patientId) {
+      res.status(400).json({ error: "Provide patientId" });
+      return;
+    }
+    if (!chiefComplaint || typeof chiefComplaint !== "string" || chiefComplaint.trim().length === 0) {
+      res.status(400).json({ error: "Provide chiefComplaint as a non-empty string" });
+      return;
+    }
+    const client = buildApiClient();
+    const result = await nextBestTest(client, {
+      patientId,
+      chiefComplaint,
+      candidates: Array.isArray(candidates) ? candidates : undefined,
+    });
+    res.json({ result });
+  } catch (err) {
+    logger.error(err, "next-best-test API error");
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 app.post("/api/patient-friendly-summary", async (req, res) => {
   try {
     const { patientId, language, readingLevel } = req.body;
@@ -468,4 +493,5 @@ app.listen(ENV.PORT, () => {
   logger.info(`  POST   /api/clinical-handoff`);
   logger.info(`  POST   /api/soap-note`);
   logger.info(`  POST   /api/patient-friendly-summary`);
+  logger.info(`  POST   /api/next-best-test`);
 });
