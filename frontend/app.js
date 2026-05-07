@@ -625,6 +625,15 @@
     const mcp = services.mcp || {};
     const agent = services.agent || {};
     const fhir = services.fhir || {};
+    // Cache the FHIR base URL for click-through citations. Fall back to the
+    // default if the status payload doesn't include it (older MCP versions).
+    const fhirBase =
+      (fhir.details && (fhir.details.fhirBaseUrl || fhir.details.baseUrl)) ||
+      "http://hapi.fhir.org/baseR4";
+    state.fhirBaseUrl = String(fhirBase).replace(/\/+$/, "");
+    // Expose to the inline-code renderer (markdown rendering happens in a
+    // closure that doesn't have direct state access).
+    window.__fhirBaseUrl = state.fhirBaseUrl;
 
     let overall = "down";
     let label = "Down";
@@ -1186,10 +1195,18 @@
     const type = match[1];
     const id = match[2];
     const shortId = id.length > 12 ? "…" + id.slice(-8) : id;
+    // Click opens the raw FHIR resource in a new tab — auditability becomes
+    // visible, not just present. Links are wrapped around the <code> so the
+    // existing inline-code styling (small mono pill with crimson tint)
+    // continues to apply, with the dotted underline in CSS signaling
+    // interactivity.
+    const base = (window.__fhirBaseUrl || "http://hapi.fhir.org/baseR4").replace(/\/+$/, "");
+    const url = base + "/" + type + "/" + id;
     return (
-      '<code class="fhir-ref" title="' + escAttr(content) + '">' +
+      '<a class="fhir-ref-link" href="' + escAttr(url) + '" target="_blank" rel="noopener">' +
+      '<code class="fhir-ref" title="' + escAttr(content + " — click to view raw FHIR") + '">' +
       escHtml(type + "/" + shortId) +
-      "</code>"
+      "</code></a>"
     );
   }
 
